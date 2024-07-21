@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
      *
      * *(argv + 4) ->
      *
-     * *(argv + 5) -> 
+     * *(argv + 5) ->
      */
 
     string first_name = "yippee";
