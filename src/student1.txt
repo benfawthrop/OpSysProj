@@ -1,7 +1,7 @@
 <<< PROJECT PART I
 <<< -- process set (n=3) with 1 CPU-bound process
 <<< -- seed=32; lambda=0.001000; bound=1024
-CPU-bound process A0: arrival time 319ms; 24 CPU bursts:
+CPU-bound process A0: arrival time 319ms; 25 CPU bursts:
 ==> CPU burst 1448ms ==> I/O burst 608ms
 ==> CPU burst 316ms ==> I/O burst 474ms
 ==> CPU burst 3556ms ==> I/O burst 964ms
@@ -27,13 +27,13 @@ CPU-bound process A0: arrival time 319ms; 24 CPU bursts:
 ==> CPU burst 820ms ==> I/O burst 1005ms
 ==> CPU burst 920ms ==> I/O burst 448ms
 ==> CPU burst 1876ms
-I/O-bound process A1: arrival time 506ms; 4 CPU bursts:
+I/O-bound process A1: arrival time 506ms; 5 CPU bursts:
 ==> CPU burst 971ms ==> I/O burst 432ms
 ==> CPU burst 129ms ==> I/O burst 1264ms
 ==> CPU burst 188ms ==> I/O burst 1496ms
 ==> CPU burst 302ms ==> I/O burst 1328ms
 ==> CPU burst 73ms
-I/O-bound process A2: arrival time 821ms; 14 CPU bursts:
+I/O-bound process A2: arrival time 821ms; 15 CPU bursts:
 ==> CPU burst 408ms ==> I/O burst 5512ms
 ==> CPU burst 182ms ==> I/O burst 3744ms
 ==> CPU burst 89ms ==> I/O burst 8ms

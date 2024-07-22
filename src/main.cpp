@@ -238,16 +238,17 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
     double avg_io_bound_cpu_burst_time = total_io_bound_cpu_bursts > 0 ?
             std::ceil((total_io_bound_cpu_burst_time / total_io_bound_cpu_bursts) * 1000.0) / 1000.0 : 0;
     double overall_avg_cpu_burst_time = (total_cpu_bound_cpu_bursts + total_io_bound_cpu_bursts) > 0 ?
-            std::ceil(((total_cpu_bound_cpu_burst_time + total_io_bound_cpu_burst_time) / (total_cpu_bound_cpu_bursts +
-            total_io_bound_cpu_bursts)) * 1000.0) / 1000.0 : 0;
+            std::ceil(((total_cpu_bound_cpu_burst_time + total_io_bound_cpu_burst_time) /
+            (total_cpu_bound_cpu_bursts + total_io_bound_cpu_bursts)) * 1000.0) / 1000.0 : 0;
 
     double avg_cpu_bound_io_burst_time = total_cpu_bound_io_bursts > 0 ?
             std::ceil((total_cpu_bound_io_burst_time / total_cpu_bound_io_bursts) * 1000.0) / 1000.0 : 0;
     double avg_io_bound_io_burst_time = total_io_bound_io_bursts > 0 ?
             std::ceil((total_io_bound_io_burst_time / total_io_bound_io_bursts) * 1000.0) / 1000.0 : 0;
     double overall_avg_io_burst_time = (total_cpu_bound_io_bursts + total_io_bound_io_bursts) > 0 ?
-            std::ceil(((total_cpu_bound_io_burst_time + total_io_bound_io_burst_time) / (total_cpu_bound_io_bursts +
-            total_io_bound_io_bursts)) * 1000.0) / 1000.0 : 0;
+            std::ceil(((total_cpu_bound_io_burst_time + total_io_bound_io_burst_time) /
+            (total_cpu_bound_io_bursts + total_io_bound_io_bursts)) * 1000.0) / 1000.0 : 0;
+
 
     std::ofstream out(filename);
     out << "-- number of processes: " << num_processes << std::endl;
