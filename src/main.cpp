@@ -16,6 +16,7 @@
 #include <iomanip>
 #include <fstream>
 #include <algorithm>
+#include "rng.h"
 
 // process object to make referring to specific processes simpler
 struct Process {
@@ -70,23 +71,23 @@ void parse_arguments(int argc, char** argv, int &n, int &ncpu, int &seed, double
 }
 
 //functions for pseudo random number generator
-
-double drand48() {
-    // generates a random double precision floating-point number between 0 and 1.
-    return static_cast<double>(std::rand()) / RAND_MAX;
-}
-
-void srand48(long seed) {
-    // initializes seed for predictable output
-    std::srand(seed);
-}
-
-double next_exp(double lambda, int bound) {
+//
+//double drand48() {
+//    // generates a random double precision floating-point number between 0 and 1.
+//    return static_cast<double>(std::rand()) / RAND_MAX;
+//}
+//
+//void srand48(long seed) {
+//    // initializes seed for predictable output
+//    std::srand(seed);
+//}
+//
+double next_exp(RandomGenerator& rng, double lambda, int bound) {
     // generates a random number from an exponential distribution with rate parameter lambda
     // also uses the bound to make sure the returned value is valid
     double value;
     do {
-        value = -std::log(drand48()) / lambda;
+        value = -std::log(rng.drand48()) / lambda;
     } while (value > bound);
     return value;
 }
@@ -94,7 +95,7 @@ double next_exp(double lambda, int bound) {
 /*
  * generates a vector of processes based off of the parameters given in the command line args
  */
-std::vector<Process> generate_processes(int n, int ncpu, double lambda, int bound) {
+std::vector<Process> generate_processes(RandomGenerator& rng, int n, int ncpu, double lambda, int bound) {
     std::vector<Process> processes;
     char process_id[3] = "A0"; // init pid
 
@@ -102,12 +103,12 @@ std::vector<Process> generate_processes(int n, int ncpu, double lambda, int boun
     for (int i = 0; i < n; ++i) {
         Process p; // initialize process
         p.id = process_id;
-        p.arrival_time = std::floor(next_exp(lambda, bound));
+        p.arrival_time = std::floor(next_exp(rng, lambda, bound));
 
-        int cpu_bursts_count = std::ceil(drand48() * 32);
+        int cpu_bursts_count = std::ceil(rng.drand48() * 32);
         // iterates by # of cpu bursts
         for (int j = 0; j < cpu_bursts_count; ++j) {
-            int cpu_burst = std::ceil(next_exp(lambda, bound));
+            int cpu_burst = std::ceil(next_exp(rng, lambda, bound));
 
             // if cpu bound
             if ( i < ncpu ) {
@@ -118,7 +119,7 @@ std::vector<Process> generate_processes(int n, int ncpu, double lambda, int boun
 
             // adds an io burst for the cpu burst if it's not the last
             if (j < cpu_bursts_count - 1) {
-                int io_burst = std::ceil(next_exp(lambda, bound));
+                int io_burst = std::ceil(next_exp(rng, lambda, bound));
 
                 if (i > ncpu) {
                     // multiplies by 8 if it's an io burst bc those take longer
@@ -229,9 +230,9 @@ int main(int argc, char** argv) {
     double lambda;
 
     parse_arguments(argc, argv, n, ncpu, seed, lambda, bound);
-    srand48(seed);
+    RandomGenerator rng(seed);
 
-    std::vector<Process> processes = generate_processes(n, ncpu, lambda, bound);
+    std::vector<Process> processes = generate_processes(rng, n, ncpu, lambda, bound);
 
     print_processes(processes, n, ncpu, seed, lambda, bound);
     write_statistics(processes, "simout.txt");
