@@ -1,8 +1,12 @@
 //
-// Created by Benjamin Fawthrop on 7/21/24.
-// g++ -Wall -Werror -std=c++11 -o main main.cpp
-//./main 3 1 32 0.001 1024
+// Created by Benjamin Fawthrop, Ricky Wang, Jimmy Wang on 7/21/24.
+// g++ -Wall -Werror -o main *.cpp -lm
+// ./main 3 1 32 0.001 1024
+// ./main 8 6 512 0.001 1024
+// ./main 16 2 256 0.001 2048
+// ./main 20 12 128 0.01 4096
 //
+
 #include <iostream>
 #include <vector>
 #include <cmath>
@@ -11,6 +15,7 @@
 #include <string>
 #include <iomanip>
 #include <fstream>
+#include <algorithm>
 
 // process object to make referring to specific processes simpler
 struct Process {
@@ -19,16 +24,32 @@ struct Process {
     std::vector<int> bursts; // burst times
 };
 
+// Functor to check if a process is CPU-bound
+struct IsCpuBound {
+    bool operator()(const Process& p) const {
+        return p.bursts[0] % 4 == 0;
+    }
+};
+
 /*
- * args:
- *      argc -> # of args
- *      argv -> arguments
- *      The rest of the arguments are passed by reference so that main gets the arguments aswell
+ * In charge of parsing arguments via reference arguments
  *
- * Output:
- *      none, just changes the args given by reference
+ * ARGUMENTS:
+ *  argc -> number of command line args
+ *  argv -> command line args
+ *
+ *  *(argv + 1) -> n, the # of processes to simulate
+ *                PID are given as A0, A1, A2, . . ., A9, B0, B1, . . ., Z9
+ *  *(argv + 2) -> ncpu, # of CPU bound processes
+ *
+ *  *(argv + 3) -> seed, seed for random number gen
+ *
+ *  *(argv + 4) -> lambda, (1/lambda) represents the average number for
+ *                the random number generator
+ *
+ *  *(argv + 5) -> bound, upper bound for random numbers
  */
-void parse_arguments(int argc, char* argv[], int &n, int &ncpu, int &seed, double &lambda, int &bound) {
+void parse_arguments(int argc, char** argv, int &n, int &ncpu, int &seed, double &lambda, int &bound) {
     // error checking
     if (argc != 6) {
         std::cerr << "ERROR: Incorrect number of arguments" << std::endl;
@@ -60,35 +81,48 @@ void srand48(long seed) {
     std::srand(seed);
 }
 
-double next_exp(double lambda) {
+double next_exp(double lambda, int bound) {
     // generates a random number from an exponential distribution with rate parameter lambda
-    return -std::log(drand48()) / lambda;
+    // also uses the bound to make sure the returned value is valid
+    double value;
+    do {
+        value = -std::log(drand48()) / lambda;
+    } while (value > bound);
+    return value;
 }
 
 /*
- *
+ * generates a vector of processes based off of the parameters given in the command line args
  */
 std::vector<Process> generate_processes(int n, int ncpu, double lambda, int bound) {
     std::vector<Process> processes;
-    char process_id[3] = "A0";
+    char process_id[3] = "A0"; // init pid
 
+    // iterates through the # of processes
     for (int i = 0; i < n; ++i) {
-        Process p;
+        Process p; // initialize process
         p.id = process_id;
-        p.arrival_time = std::floor(next_exp(lambda));
+        p.arrival_time = std::floor(next_exp(lambda, bound));
 
         int cpu_bursts_count = std::ceil(drand48() * 32);
+        // iterates by # of cpu bursts
         for (int j = 0; j < cpu_bursts_count; ++j) {
-            int cpu_burst = std::ceil(next_exp(lambda));
-            if (i < ncpu) {
-                cpu_burst *= 4;
+            int cpu_burst = std::ceil(next_exp(lambda, bound));
+
+            // if cpu bound
+            if ( i < ncpu ) {
+                cpu_burst *= 4; // as per doc
             }
+
             p.bursts.push_back(cpu_burst);
 
+            // adds an io burst for the cpu burst if it's not the last
             if (j < cpu_bursts_count - 1) {
-                int io_burst = std::ceil(next_exp(lambda)) * 8;
-                if (i < ncpu) {
-                    io_burst /= 8;
+                int io_burst = std::ceil(next_exp(lambda, bound));
+
+                if (i > ncpu) {
+                    // multiplies by 8 if it's an io burst bc those take longer
+                    io_burst *= 8;
                 }
                 p.bursts.push_back(io_burst);
             }
@@ -109,17 +143,32 @@ std::vector<Process> generate_processes(int n, int ncpu, double lambda, int boun
 }
 
 /*
+ * manages the output to stdout of our random processes
  *
+ * ARGUMENTS:
+ *      processes -> vector of our generated processes
+ *      n -> # of processes
+ *      ncpu -> # of cpu bound processes
+ *      seed -> seed for rnum generator
+ *      lambda -> (1/lambda) represents the average number for
+ *                the random number generator
+ *      bound -> upper bound for rnums
  */
 void print_processes(const std::vector<Process>& processes, int n, int ncpu, int seed, double lambda, int bound) {
     std::cout << "<<< PROJECT PART I" << std::endl;
-    std::cout << "<<< -- process set (n=" << n << ") with " << ncpu << " CPU-bound process" << (ncpu > 1 ? "es" : "") << std::endl;
-    std::cout << "<<< -- seed=" << seed << "; lambda=" << std::fixed << std::setprecision(6) << lambda << "; bound=" << bound << std::endl;
+    std::cout << "<<< -- process set (n=" << n << ") with " << ncpu << " CPU-bound process" <<
+            (ncpu > 1 ? "es" : "") << std::endl;
+    std::cout << "<<< -- seed=" << seed << "; lambda=" << std::fixed << std::setprecision(6) <<
+            lambda << "; bound=" << bound << std::endl;
 
-    for (const auto& p : processes) {
-        bool is_cpu_bound = (p.bursts[0] % 4 == 0);  // crude way to identify CPU-bound processes
-        std::cout << (is_cpu_bound ? "CPU-bound" : "I/O-bound") << " process " << p.id << ": arrival time " << p.arrival_time << "ms; " << (p.bursts.size() / 2) << " CPU bursts:" << std::endl;
+    // loops through our processes
+    for (int j = 0 ; j < n ; j++) {
+        const Process & p = processes[j];
+        bool is_cpu_bound = p.bursts[0] % 4 == 0;
+        std::cout << (is_cpu_bound ? "CPU-bound" : "I/O-bound") << " process " << p.id << ": arrival time " <<
+                p.arrival_time << "ms; " << (p.bursts.size() / 2) << " CPU bursts:" << std::endl;
 
+        // loops through each process's bursts
         for (size_t i = 0; i < p.bursts.size(); i += 2) {
             std::cout << "==> CPU burst " << p.bursts[i] << "ms";
             if (i + 1 < p.bursts.size()) {
@@ -130,18 +179,27 @@ void print_processes(const std::vector<Process>& processes, int n, int ncpu, int
     }
 }
 
+
+
 /*
+ * handles writing our outputs to filename based on described in the assignment
  *
+ * ARGUMENTS:
+ *      processes -> our generated processes
+ *      filename -> name of the file to print to
  */
 void write_statistics(const std::vector<Process>& processes, const std::string& filename) {
     int num_processes = processes.size();
-    int num_cpu_bound = std::count_if(processes.begin(), processes.end(), [](const Process& p) { return p.bursts[0] % 4 == 0; });
+    int num_cpu_bound = std::count_if(processes.begin(), processes.end(), IsCpuBound());
     int num_io_bound = num_processes - num_cpu_bound;
 
     double total_cpu_burst_time = 0;
     double total_io_burst_time = 0;
 
-    for (const auto& p : processes) {
+    // loops through all processes
+    for (int j = 0 ; j < num_processes ; j++) {
+        const Process & p = processes[j];
+        // loops through all bursts
         for (size_t i = 0; i < p.bursts.size(); i += 2) {
             total_cpu_burst_time += p.bursts[i];
             if (i + 1 < p.bursts.size()) {
@@ -166,7 +224,7 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
     out.close();
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
     int n, ncpu, seed, bound;
     double lambda;
 
