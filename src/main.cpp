@@ -170,7 +170,9 @@ void print_processes(const std::vector<Process>& processes, int n, int ncpu, int
         const Process & p = processes[j];
         bool is_cpu_bound = p.is_cpu_bound;
         std::cout << (is_cpu_bound ? "CPU-bound" : "I/O-bound") << " process " << p.id << ": arrival time " <<
-                p.arrival_time << "ms; " << (p.bursts.size() / 2) + 1 << " CPU bursts:" << std::endl;
+                  p.arrival_time << "ms; " << (p.bursts.size() / 2) + 1 << " CPU burst" <<
+                  ((p.bursts.size() / 2) + 1 == 1 ? "" : "s") << ":" << std::endl;
+
 
         // loops through each process's bursts
         for (size_t i = 0; i < p.bursts.size(); i += 2) {
