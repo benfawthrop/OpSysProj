@@ -1,0 +1,5 @@
+time 0ms: Simulator started for FCFS [Q empty]
+time 319ms: Process A0 arrived; added to ready queue [Q A0]
+time 319ms: Process A0 started using the CPU for 875167744ms burst [Q empty]
+time 506ms: Process A1 arrived; added to ready queue [Q A1]
+time 821ms: Process A2 arrived; added to ready queue [Q A1 A2]

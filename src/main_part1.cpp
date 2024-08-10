@@ -17,12 +17,14 @@
 #include <fstream>
 #include <algorithm>
 #include "rng.h"
-#include "process.h"
-#include "fcfs.h"
-#include "sjf.h"
-#include "srt.h"
-#include "rr.h"
 
+// process object to make referring to specific processes simpler
+struct Process {
+    std::string id; // PID
+    int arrival_time;
+    std::vector<int> bursts; // burst times
+    bool is_cpu_bound;
+};
 
 // Functor to check if a process is CPU-bound
 struct IsCpuBound {
@@ -48,18 +50,10 @@ struct IsCpuBound {
  *                the random number generator
  *
  *  *(argv + 5) -> bound, upper bound for random numbers
- *
- *  *(argv + 6) -> context_time, context switch time, half to remove current running process,
- *                 half to get next ready process
- *
- *  *(argv + 7) -> alpha, exponential averaging const
- *
- *  *(argv + 8) -> slice_time, for Round Robin alg
  */
-void parse_arguments(int argc, char** argv, int &n, int &ncpu, int &seed, double &lambda, int &bound,
-                     int &context_time, double &alpha, int &slice_time) {
+void parse_arguments(int argc, char** argv, int &n, int &ncpu, int &seed, double &lambda, int &bound) {
     // error checking
-    if (argc != 9) {
+    if (argc != 6) {
         std::cerr << "ERROR: Incorrect number of arguments" << std::endl;
         std::exit(1);
     }
@@ -71,18 +65,6 @@ void parse_arguments(int argc, char** argv, int &n, int &ncpu, int &seed, double
         seed = std::stoi(argv[3]);
         lambda = std::stod(argv[4]);
         bound = std::stoi(argv[5]);
-        context_time = std::stoi(argv[6]);
-        if (context_time < 0 && context_time % 2 != 0) {
-            std::cerr << "Incorrect Usage: context time must be a positive, even integer" << std::endl;
-        }
-        alpha = std::stod(argv[7]);
-        if (alpha > 1 || alpha < 0) {
-            std::cerr << "Incorrect Usage: alpha must be [0,1]" << std::endl;
-        }
-        slice_time = std::stoi(argv[8]);
-        if (slice_time < 0) {
-            std::cerr << "Incorrect Usage: slice time must be positive" << std::endl;
-        }
     } catch (std::exception &e) {
         std::cerr << "ERROR: Invalid argument type" << std::endl;
         std::exit(1);
@@ -176,12 +158,12 @@ std::vector<Process> generate_processes(RandomGenerator& rng, int n, int ncpu, d
  *                the random number generator
  *      bound -> upper bound for rnums
  */
-void part1_print(const std::vector<Process>& processes, int n, int ncpu, int seed, double lambda, int bound) {
+void print_processes(const std::vector<Process>& processes, int n, int ncpu, int seed, double lambda, int bound) {
     std::cout << "<<< PROJECT PART I" << std::endl;
     std::cout << "<<< -- process set (n=" << n << ") with " << ncpu << " CPU-bound process" <<
-              (ncpu > 1 ? "es" : "") << std::endl;
+            (ncpu > 1 ? "es" : "") << std::endl;
     std::cout << "<<< -- seed=" << seed << "; lambda=" << std::fixed << std::setprecision(6) <<
-              lambda << "; bound=" << bound << std::endl;
+            lambda << "; bound=" << bound << std::endl;
 
     // loops through our processes
     for (int j = 0 ; j < n ; j++) {
@@ -190,6 +172,16 @@ void part1_print(const std::vector<Process>& processes, int n, int ncpu, int see
         std::cout << (is_cpu_bound ? "CPU-bound" : "I/O-bound") << " process " << p.id << ": arrival time " <<
                   p.arrival_time << "ms; " << (p.bursts.size() / 2) + 1 << " CPU burst" <<
                   ((p.bursts.size() / 2) + 1 == 1 ? "" : "s") << ":" << std::endl;
+
+
+        // loops through each process's bursts
+        for (size_t i = 0; i < p.bursts.size(); i += 2) {
+            std::cout << "==> CPU burst " << p.bursts[i] << "ms";
+            if (i + 1 < p.bursts.size()) {
+                std::cout << " ==> I/O burst " << p.bursts[i + 1] << "ms";
+            }
+            std::cout << std::endl;
+        }
     }
 }
 
@@ -242,20 +234,20 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
     }
 
     double avg_cpu_bound_cpu_burst_time = total_cpu_bound_cpu_bursts > 0 ?
-                                          std::ceil((total_cpu_bound_cpu_burst_time / total_cpu_bound_cpu_bursts) * 1000.0) / 1000.0 : 0;
+            std::ceil((total_cpu_bound_cpu_burst_time / total_cpu_bound_cpu_bursts) * 1000.0) / 1000.0 : 0;
     double avg_io_bound_cpu_burst_time = total_io_bound_cpu_bursts > 0 ?
-                                         std::ceil((total_io_bound_cpu_burst_time / total_io_bound_cpu_bursts) * 1000.0) / 1000.0 : 0;
+            std::ceil((total_io_bound_cpu_burst_time / total_io_bound_cpu_bursts) * 1000.0) / 1000.0 : 0;
     double overall_avg_cpu_burst_time = (total_cpu_bound_cpu_bursts + total_io_bound_cpu_bursts) > 0 ?
-                                        std::ceil(((total_cpu_bound_cpu_burst_time + total_io_bound_cpu_burst_time) /
-                                                   (total_cpu_bound_cpu_bursts + total_io_bound_cpu_bursts)) * 1000.0) / 1000.0 : 0;
+            std::ceil(((total_cpu_bound_cpu_burst_time + total_io_bound_cpu_burst_time) /
+            (total_cpu_bound_cpu_bursts + total_io_bound_cpu_bursts)) * 1000.0) / 1000.0 : 0;
 
     double avg_cpu_bound_io_burst_time = total_cpu_bound_io_bursts > 0 ?
-                                         std::ceil((total_cpu_bound_io_burst_time / total_cpu_bound_io_bursts) * 1000.0) / 1000.0 : 0;
+            std::ceil((total_cpu_bound_io_burst_time / total_cpu_bound_io_bursts) * 1000.0) / 1000.0 : 0;
     double avg_io_bound_io_burst_time = total_io_bound_io_bursts > 0 ?
-                                        std::ceil((total_io_bound_io_burst_time / total_io_bound_io_bursts) * 1000.0) / 1000.0 : 0;
+            std::ceil((total_io_bound_io_burst_time / total_io_bound_io_bursts) * 1000.0) / 1000.0 : 0;
     double overall_avg_io_burst_time = (total_cpu_bound_io_bursts + total_io_bound_io_bursts) > 0 ?
-                                       std::ceil(((total_cpu_bound_io_burst_time + total_io_bound_io_burst_time) /
-                                                  (total_cpu_bound_io_bursts + total_io_bound_io_bursts)) * 1000.0) / 1000.0 : 0;
+            std::ceil(((total_cpu_bound_io_burst_time + total_io_bound_io_burst_time) /
+            (total_cpu_bound_io_bursts + total_io_bound_io_bursts)) * 1000.0) / 1000.0 : 0;
 
 
     std::ofstream out(filename);
@@ -277,24 +269,17 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
     out.close();
 }
 
-
 int main(int argc, char** argv) {
-    int n, ncpu, seed, bound, context_time, slice_time;
-    double lambda, alpha;
+    int n, ncpu, seed, bound;
+    double lambda;
 
-    parse_arguments(argc, argv, n, ncpu, seed, lambda, bound, context_time, alpha, slice_time);
+    parse_arguments(argc, argv, n, ncpu, seed, lambda, bound);
     RandomGenerator rng(seed);
 
     std::vector<Process> processes = generate_processes(rng, n, ncpu, lambda, bound);
 
-//    print_processes(processes, n, ncpu, seed, lambda, bound);
+    print_processes(processes, n, ncpu, seed, lambda, bound);
     write_statistics(processes, "simout.txt");
-
-    // FCFS simulation
-    fcfs fcfs_simulation(processes, context_time);
-    fcfs_simulation.simulate();
-    fcfs_simulation.print_results();
-    fcfs_simulation.write_statistics("simout.txt");
 
     return 0;
 }
