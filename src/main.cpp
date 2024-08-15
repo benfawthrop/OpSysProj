@@ -278,6 +278,25 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
 }
 
 
+/*
+ * Wrapper function for printing P2 of the project
+ *
+ * ARGS:
+ *
+ * processes -> vector of processes
+ * t_cs -> context switch time
+ * alpha -> alpha used for SRT and SJF
+ * t_slc -> slice time
+ */
+void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_slice) {
+    std::cout << "<<< PROJECT PART II\n<<< -- t_cs=" << t_cs << "ms; alpha=" << std::setprecision(2) <<
+            alpha << "; t_slice=" << t_slice << std::endl;
+
+    // here is where we call of the individual classes for our algorithms
+    fcfs start = fcfs(processes, t_cs);
+}
+
+
 int main(int argc, char** argv) {
     int n, ncpu, seed, bound, context_time, slice_time;
     double lambda, alpha;
@@ -287,14 +306,11 @@ int main(int argc, char** argv) {
 
     std::vector<Process> processes = generate_processes(rng, n, ncpu, lambda, bound);
 
-//    print_processes(processes, n, ncpu, seed, lambda, bound);
+    part1_print(processes, n, ncpu, seed, lambda, bound);
+    part2_print(processes, context_time, alpha, slice_time);
     write_statistics(processes, "simout.txt");
 
-    // FCFS simulation
-    fcfs fcfs_simulation(processes, context_time);
-    fcfs_simulation.simulate();
-    fcfs_simulation.print_results();
-    fcfs_simulation.write_statistics("simout.txt");
+
 
     return 0;
 }

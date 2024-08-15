@@ -3,118 +3,108 @@
 #include <queue>
 #include <iomanip>
 #include <fstream>
+#include <string>
+#include <map>
 
-// All lowercase class name and function definitions
-fcfs::fcfs(const std::vector<Process>& processes, int context_switch_time)
-        : processes(processes), context_switch_time(context_switch_time),
-          cpu_utilization(0.0), average_turnaround_time(0.0),
-          average_wait_time(0.0), total_context_switches(0) {}
 
-void fcfs::simulate() {
-    run_simulation();
+void fcfs::sim_and_print() {
+    print_line("Simulator started for FCFS");
+    std::map<int, Process> io_bound_map; // stores all io bound processes keyed by their completion time
+    std::priority_queue<int, std::vector<int>, std::greater<int> > io_bound_map_keys; // stores times for each io bound process completion
+    bool cpu_free = true; // flag if the CPU is free to use
+//    bool io_free = true;  // flag if the I/O is free to use
+    int i = 0; // makes sure all processes are added
+    Process using_cpu; // process that is currently holding the CPU
+//    Process* using_io;  // process that is currently holding the I/O
+    int time_cpu_frees = -1; // -1 if cpu is free, int
+    int processes_killed = 0;
+
+
+    while ( processes_killed < processes.size() ) {
+        if (elapsed_time == 2377) elapsed_time = 2377;
+
+        bool did_something = false; // sees if we can time skip
+
+
+        if ( i < processes.size() ) {
+            // adds all processes 1 at a time
+            q.push(processes[i]);
+            elapsed_time += processes[i].arrival_time;
+            if (elapsed_time <= 9999) {
+                print_line("Process " + processes[i].id + " arrived; added to the ready queue");
+            }
+            i++;
+            did_something = true;
+        }
+        if ( cpu_free ) {
+            cpu_free = false;
+            elapsed_time += context_switch_time / 2;
+            using_cpu = q.front();
+            time_cpu_frees = using_cpu.bursts.front() + elapsed_time;
+            q.pop();
+            if (elapsed_time <= 9999) {
+                print_line("Process " + using_cpu.id + " started using the CPU for " +
+                           std::to_string(using_cpu.bursts.front()) + "ms burst");
+            }
+            using_cpu.bursts.erase(using_cpu.bursts.begin());
+            did_something = true;
+        }
+
+        if (!did_something || time_cpu_frees == elapsed_time ||
+                (!io_bound_map_keys.empty() && io_bound_map_keys.top() == elapsed_time)) {
+            if ( time_cpu_frees <= (!io_bound_map_keys.empty() ? io_bound_map_keys.top() : time_cpu_frees) ) {
+                // cpu event happens first
+                elapsed_time = time_cpu_frees;
+                time_cpu_frees = -1;
+                cpu_free = true;
+                // output if allowed
+                if ( elapsed_time <= 9999 ) {
+                    print_line("Process " + using_cpu.id + " completed a CPU burst; " +
+                            std::to_string((using_cpu.bursts.size() / 2) + 1) + " bursts to go");
+                    if (using_cpu.bursts.size() > 0) {
+                        print_line("Process " + using_cpu.id + " switching out of CPU; blocking on I/O until time " +
+                                   std::to_string(elapsed_time + using_cpu.bursts.front()) + "ms");
+                    }
+                }
+                // terminates if done with last CPU burst
+                if ( using_cpu.bursts.size() == 0 ) {
+                    print_line("Process " + using_cpu.id + " terminated" );
+                    processes_killed++;
+                } else {
+                    // add our io bound process to the map for that ordered by time
+                    io_bound_map[elapsed_time + using_cpu.bursts.front()] = using_cpu;
+                    io_bound_map_keys.push(elapsed_time + using_cpu.bursts.front());
+
+                    using_cpu.bursts.erase(using_cpu.bursts.begin());
+                }
+                elapsed_time += context_switch_time / 2;
+
+            } else if ( io_bound_map_keys.size() > 0 && time_cpu_frees >= io_bound_map_keys.top() ) {
+                // IO event happens first
+                elapsed_time = io_bound_map_keys.top();
+                q.push(io_bound_map[elapsed_time]);
+                if ( elapsed_time <= 9999) {
+                    print_line("Process " + io_bound_map[elapsed_time].id + " completed I/O; added to ready queue");
+                }
+                io_bound_map.erase(elapsed_time);
+            }
+        }
+    } // while
+    print_line("Simulator ended for FCFS");
 }
 
-// Function to print the current state of the ready queue
-void print_queue(const std::queue<Process>& ready_queue) {
-    std::queue<Process> copy = ready_queue;
-    if (copy.empty()) {
-        std::cout << "empty";
+std::string fcfs::get_queue_status() {
+    std::string result = "[Q";
+    if (q.empty()) {
+        result.append(" empty]");
     } else {
-        while (!copy.empty()) {
-            std::cout << copy.front().id;
-            copy.pop();
-            if (!copy.empty()) {
-                std::cout << " ";
-            }
+        std::queue<Process> temp = q;
+        while(!temp.empty()) {
+            result.append(" " + temp.front().id);
+            temp.pop();
         }
-    }
-}
-
-void fcfs::run_simulation() {
-    int time = 0;
-    std::queue<Process> ready_queue;
-
-    std::cout << "time " << time << "ms: Simulator started for FCFS [Q empty]" << std::endl;
-
-    Process* current_process = nullptr;
-    int burst_completion_time = 0;
-    int total_processes = processes.size();
-    int terminated_processes = 0;
-
-    // Simulation loop
-    while (terminated_processes < total_processes || !ready_queue.empty() || current_process != nullptr) {
-        // Handle new arrivals at the current time
-        for (size_t i = 0; i < processes.size(); ++i) {
-            if (processes[i].arrival_time == time) {
-                ready_queue.push(processes[i]);
-                std::cout << "time " << time << "ms: Process " << processes[i].id << " arrived; added to ready queue [Q ";
-                print_queue(ready_queue);
-                std::cout << "]" << std::endl;
-            }
-        }
-
-        // If there's no current process, take the next one from the queue
-        if (current_process == nullptr && !ready_queue.empty()) {
-            current_process = &ready_queue.front();
-            ready_queue.pop();
-
-            int burst_time = current_process->bursts.front();
-            burst_completion_time = time + burst_time;
-
-            std::cout << "time " << time << "ms: Process " << current_process->id
-                      << " started using the CPU for " << burst_time << "ms burst [Q ";
-            print_queue(ready_queue);
-            std::cout << "]" << std::endl;
-        }
-
-        // Check if the current process has completed its CPU burst
-        if (current_process != nullptr && time == burst_completion_time) {
-            current_process->bursts.erase(current_process->bursts.begin());
-            std::cout << "time " << time << "ms: Process " << current_process->id
-                      << " completed a CPU burst; " << current_process->bursts.size() / 2 << " bursts to go [Q ";
-            print_queue(ready_queue);
-            std::cout << "]" << std::endl;
-
-            if (!current_process->bursts.empty()) {
-                int io_completion_time = time + context_switch_time + current_process->bursts.front();
-                current_process->arrival_time = io_completion_time;
-                std::cout << "time " << time << "ms: Process " << current_process->id
-                          << " switching out of CPU; blocking on I/O until time " << io_completion_time << "ms [Q ";
-                print_queue(ready_queue);
-                std::cout << "]" << std::endl;
-            } else {
-                std::cout << "time " << time << "ms: Process " << current_process->id << " terminated [Q ";
-                print_queue(ready_queue);
-                std::cout << "]" << std::endl;
-                terminated_processes++;
-            }
-
-            // The CPU becomes available again
-            current_process = nullptr;
-            time += context_switch_time / 2;  // Simulate half of the context switch time
-        }
-
-        // Increment time
-        time++;
+        result.append("]");
     }
 
-    std::cout << "time " << time << "ms: Simulator ended for FCFS [Q empty]" << std::endl;
-}
-
-
-
-
-
-void fcfs::print_results() const {
-    // This can be used to output final summary, but now all events are printed during the simulation.
-}
-
-void fcfs::write_statistics(const std::string& filename) const {
-    std::ofstream out(filename.c_str(), std::ios::app);
-    out << "Algorithm FCFS" << std::endl;
-    out << "-- CPU utilization: " << std::fixed << std::setprecision(3) << cpu_utilization << "%" << std::endl;
-    out << "-- Average turnaround time: " << std::fixed << std::setprecision(3) << average_turnaround_time << " ms" << std::endl;
-    out << "-- Average wait time: " << std::fixed << std::setprecision(3) << average_wait_time << " ms" << std::endl;
-    out << "-- Total context switches: " << total_context_switches << std::endl;
-    out.close();
+    return result;
 }
