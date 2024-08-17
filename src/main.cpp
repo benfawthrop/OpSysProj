@@ -294,6 +294,16 @@ void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_s
 
     // here is where we call of the individual classes for our algorithms
     fcfs start = fcfs(processes, t_cs);
+    ///ricky added this for sjf
+    sjf sjf_scheduler(processes, t_cs, alpha);
+    sjf_scheduler.simulate();
+
+
+    /// jimmy added this for rr
+    rr rrScheduler = rr(processes, t_cs, t_slice);
+
+
+
 }
 
 

@@ -5,12 +5,16 @@
 #ifndef OPSYSPROJ_PROCESS_H
 #define OPSYSPROJ_PROCESS_H
 
+#include <string>
+#include <vector>
+
 class Process {
 public:
     std::string id; // PID
     int arrival_time;
     std::vector<int> bursts; // burst times
     bool is_cpu_bound;
+    double tau; ///added this for sjf
 
 //    Process& operator=(const Process &other);
 };
