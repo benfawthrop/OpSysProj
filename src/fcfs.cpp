@@ -33,7 +33,7 @@ void fcfs::sim_and_print() {
                 elapsed_time = processes[i].arrival_time;
                 if (elapsed_time <= 9999) {
                     // prints if allowed
-                    print_line("Process " + processes[i].id + " arrived; added to the ready queue");
+                    print_line("Process " + processes[i].id + " arrived; added to ready queue");
                 }
                 i++;
                 did_something = true;
