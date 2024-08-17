@@ -21,22 +21,25 @@ void fcfs::sim_and_print() {
 
 
     while ( processes_killed < processes.size() ) {
-        if (elapsed_time == 2377) elapsed_time = 2377;
 
         bool did_something = false; // sees if we can time skip
 
 
         if ( i < processes.size() ) {
             // adds all processes 1 at a time
-            q.push(processes[i]);
-            elapsed_time += processes[i].arrival_time;
-            if (elapsed_time <= 9999) {
-                print_line("Process " + processes[i].id + " arrived; added to the ready queue");
+            int curr_arrival = processes[i].arrival_time;
+            if (curr_arrival >= elapsed_time && (time_cpu_frees == -1 || curr_arrival <= time_cpu_frees) &&
+                (io_bound_map_keys.empty() || curr_arrival <= io_bound_map_keys.top())) {
+                q.push(processes[i]);
+                elapsed_time = processes[i].arrival_time;
+                if (elapsed_time <= 9999) {
+                    print_line("Process " + processes[i].id + " arrived; added to the ready queue");
+                }
+                i++;
+                did_something = true;
             }
-            i++;
-            did_something = true;
         }
-        if ( cpu_free ) {
+        if ( cpu_free && !q.empty()) {
             cpu_free = false;
             elapsed_time += context_switch_time / 2;
             using_cpu = q.front();
@@ -52,18 +55,22 @@ void fcfs::sim_and_print() {
 
         if (!did_something || time_cpu_frees == elapsed_time ||
                 (!io_bound_map_keys.empty() && io_bound_map_keys.top() == elapsed_time)) {
-            if ( time_cpu_frees <= (!io_bound_map_keys.empty() ? io_bound_map_keys.top() : time_cpu_frees) ) {
+            if ( time_cpu_frees > 0 && time_cpu_frees <= (!io_bound_map_keys.empty() ? io_bound_map_keys.top() : time_cpu_frees) ) {
                 // cpu event happens first
                 elapsed_time = time_cpu_frees;
                 time_cpu_frees = -1;
                 cpu_free = true;
+                int burst = using_cpu.bursts.front();
                 // output if allowed
                 if ( elapsed_time <= 9999 ) {
                     print_line("Process " + using_cpu.id + " completed a CPU burst; " +
-                            std::to_string((using_cpu.bursts.size() / 2) + 1) + " bursts to go");
+                            std::to_string((using_cpu.bursts.size() / 2)) + " bursts to go");
                     if (using_cpu.bursts.size() > 0) {
+                        if (elapsed_time == 3609){
+                            elapsed_time = 3609;
+                        }
                         print_line("Process " + using_cpu.id + " switching out of CPU; blocking on I/O until time " +
-                                   std::to_string(elapsed_time + using_cpu.bursts.front()) + "ms");
+                                   std::to_string(elapsed_time + burst + (context_switch_time / 2)) + "ms");
                     }
                 }
                 // terminates if done with last CPU burst
@@ -72,14 +79,14 @@ void fcfs::sim_and_print() {
                     processes_killed++;
                 } else {
                     // add our io bound process to the map for that ordered by time
-                    io_bound_map[elapsed_time + using_cpu.bursts.front()] = using_cpu;
-                    io_bound_map_keys.push(elapsed_time + using_cpu.bursts.front());
-
                     using_cpu.bursts.erase(using_cpu.bursts.begin());
+
+                    io_bound_map[elapsed_time + burst + (context_switch_time / 2)] = using_cpu;
+                    io_bound_map_keys.push(elapsed_time + burst + (context_switch_time / 2));
                 }
                 elapsed_time += context_switch_time / 2;
 
-            } else if ( io_bound_map_keys.size() > 0 && time_cpu_frees >= io_bound_map_keys.top() ) {
+            } else if ( io_bound_map_keys.size() > 0 && (time_cpu_frees >= io_bound_map_keys.top() || time_cpu_frees == -1) ) {
                 // IO event happens first
                 elapsed_time = io_bound_map_keys.top();
                 q.push(io_bound_map[elapsed_time]);
@@ -87,6 +94,7 @@ void fcfs::sim_and_print() {
                     print_line("Process " + io_bound_map[elapsed_time].id + " completed I/O; added to ready queue");
                 }
                 io_bound_map.erase(elapsed_time);
+                io_bound_map_keys.pop();
             }
         }
     } // while
