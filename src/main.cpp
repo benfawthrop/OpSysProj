@@ -290,7 +290,7 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
  */
 void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_slice) {
     std::cout << "<<< PROJECT PART II\n<<< -- t_cs=" << t_cs << "ms; alpha=" << std::setprecision(2) <<
-            alpha << "; t_slice=" << t_slice << std::endl;
+            alpha << "; t_slice=" << t_slice << "ms" << std::endl;
 
     // here is where we call of the individual classes for our algorithms
     fcfs FCFS = fcfs(processes, t_cs);
