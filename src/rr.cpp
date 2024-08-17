@@ -28,8 +28,8 @@ void rr::printQueue(std::queue<Process*> readyQueue) {
 void rr::simulate() {
     std::queue<Process*> readyQueue;
     int currentTime = 0;
-    int contextSwitches = 0;
-    int preemptions = 0;
+    //int contextSwitches = 0;
+    //int preemptions = 0;
 
     std::cout << "time 0ms: Simulator started for RR [Q empty]\n";
 
@@ -71,7 +71,7 @@ void rr::simulate() {
                 printQueue(readyQueue);
                 std::cout << "\n";
                 readyQueue.push(currentProcess);
-                preemptions++;
+                //preemptions++;
             } else {
                 // Burst completed
                 currentProcess->bursts.erase(currentProcess->bursts.begin());
@@ -102,7 +102,7 @@ void rr::simulate() {
 
             if (!readyQueue.empty() || processIndex < processes.size()) {
                 currentTime += t_cs / 2;  // Context switch out time
-                contextSwitches++;
+                //contextSwitches++;
             }
         } else {
             // CPU idle, find the next event (next process arrival or next process returning from I/O)

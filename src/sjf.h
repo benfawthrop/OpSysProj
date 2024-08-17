@@ -13,12 +13,14 @@ public:
 
 private:
     std::vector<Process> processes;
+    std::vector<Process> ready_queue;  // Ready queue for SJF
     int context_time;
     double alpha;  // Alpha value for tau recalculation
+    int elapsed_time;
 
-    void sort_processes();
+    static bool CompareTau(const Process &a, const Process &b);
+
     void print_event(int time, const std::string &event, const std::vector<Process> &ready_queue);
 };
 
-#endif //OPSYSPROJ_SJF_H
-
+#endif // OPSYSPROJ_SJF_H
