@@ -293,14 +293,17 @@ void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_s
             alpha << "; t_slice=" << t_slice << std::endl;
 
     // here is where we call of the individual classes for our algorithms
-    fcfs start = fcfs(processes, t_cs);
+    fcfs FCFS = fcfs(processes, t_cs);
+    std::cout << std::endl;
+    FCFS.write_statistics("simout.txt");
     ///ricky added this for sjf
-    sjf sjf_scheduler(processes, t_cs, alpha);
-    sjf_scheduler.simulate();
+//    sjf sjf_scheduler(processes, t_cs, alpha);
+//    sjf_scheduler.simulate();
 
+//    srt SRT = srt(processes, )
 
     /// jimmy added this for rr
-    rr rrScheduler = rr(processes, t_cs, t_slice);
+//    rr rrScheduler = rr(processes, t_cs, t_slice);
 
 
 
@@ -317,8 +320,9 @@ int main(int argc, char** argv) {
     std::vector<Process> processes = generate_processes(rng, n, ncpu, lambda, bound);
 
     part1_print(processes, n, ncpu, seed, lambda, bound);
-    part2_print(processes, context_time, alpha, slice_time);
     write_statistics(processes, "simout.txt");
+    part2_print(processes, context_time, alpha, slice_time);
+
 
 
 
