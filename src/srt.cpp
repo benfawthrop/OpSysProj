@@ -4,6 +4,7 @@
 #include <queue>
 #include <fstream>
 
+
 // Helper function to print events and queue status
 void srt::print_event(int time, const std::string &event, const std::priority_queue<Process, std::vector<Process>, CompareRemainingTime> &ready_queue) {
     std::cout << "time " << time << "ms: " << event << " [Q";

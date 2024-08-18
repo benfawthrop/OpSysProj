@@ -63,11 +63,11 @@ void sjf::simulate() {
     int time_cpu_frees = -1;
     int processes_killed = 0;
 
-    while (processes_killed < processes.size()) {
+    while (processes_killed < (int) processes.size()) {
         bool did_something = false;
 
         // Add any arriving processes to the ready queue
-        if (i < processes.size()) {
+        if (i < (int) processes.size()) {
             int curr_arrival = processes[i].arrival_time;
             if (curr_arrival >= elapsed_time &&
                 (time_cpu_frees == -1 || curr_arrival <= time_cpu_frees) &&
