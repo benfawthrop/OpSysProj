@@ -7,7 +7,7 @@
 #include "rng.h"
 #include "process.h"
 #include <queue>
-#include <string>
+
 
 
 
@@ -23,7 +23,7 @@ public:
 
     // getters
     void sim_and_print();
-    void write_statistics(const std::string& filename);
+    void write_statistics(const std::string& filename) const;
 //    void write_statistics(const std::string& filename) const;
 
 private:

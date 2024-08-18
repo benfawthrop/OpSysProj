@@ -11,7 +11,7 @@ void fcfs::sim_and_print() {
     print_line("Simulator started for FCFS");
 
     std::map<int, Process> io_bound_map;
-    std::priority_queue<int, std::vector<int>, std::greater<int>> io_bound_map_keys;
+    std::priority_queue<int, std::vector<int>, std::greater<int> > io_bound_map_keys;
     std::queue<int> times_entered_q;
     bool cpu_free = true;
     int i = 0;
@@ -40,7 +40,7 @@ void fcfs::sim_and_print() {
                 times_entered_q.push(elapsed_time);
                 elapsed_time = processes[i].arrival_time;
                 if (elapsed_time <= 9999) {
-                    print_line("Process " + processes[i].id + " arrived; added to the ready queue");
+                    print_line("Process " + processes[i].id + " arrived; added to ready queue");
                 }
                 i++;
                 did_something = true;
@@ -93,17 +93,15 @@ void fcfs::sim_and_print() {
                 cpu_free = true;
 
                 int burst = using_cpu.bursts.front();
-                if (elapsed_time <= 9999) {
+                if (elapsed_time <= 9999 && using_cpu.bursts.size() > 0) {
                     print_line("Process " + using_cpu.id + " completed a CPU burst; " +
-                               std::to_string((using_cpu.bursts.size() / 2)) + " bursts to go");
-
-                    if (using_cpu.bursts.size() > 0) {
-                        print_line("Process " + using_cpu.id + " switching out of CPU; blocking on I/O until time " +
-                                   std::to_string(elapsed_time + burst + (context_switch_time / 2)) + "ms");
-                    }
+                               std::to_string((using_cpu.bursts.size() / 2)) + " burst" +
+                               ((using_cpu.bursts.size() / 2) > 1 ? "s" : "") + " to go");
+                    print_line("Process " + using_cpu.id + " switching out of CPU; blocking on I/O until time " +
+                               std::to_string(elapsed_time + burst + (context_switch_time / 2)) + "ms");
                 }
 
-                if (using_cpu.bursts.size() == 0) {
+                if (using_cpu.bursts.empty()) {
                     print_line("Process " + using_cpu.id + " terminated");
                     processes_killed++;
 //                    int turnaround_time = elapsed_time - using_cpu.arrival_time;
@@ -159,9 +157,9 @@ std::string fcfs::get_queue_status() {
     return result;
 }
 
-void fcfs::write_statistics(const std::string& filename) {
+void fcfs::write_statistics(const std::string& filename) const {
     // TODO: Fix bugs with data collection for this
-    std::fstream outfile(filename, std::ios::out);
+    std::fstream outfile(filename, std::ios::app);
 
     outfile << "Algorithm FCFS" << std::endl;
     outfile << "-- CPU utilization: " << std::fixed << std::setprecision(3) << (std::ceil(cpu_util * 100000) / 1000) << "%" << std::endl;
@@ -176,7 +174,7 @@ void fcfs::write_statistics(const std::string& filename) {
     outfile << "-- Overall context switches: " << num_cpu_switches + num_io_switches << std::endl;
     outfile << "-- CPU-bound preemptions: " << cpu_preempt << std::endl;
     outfile << "-- I/O-bound preemptions: " << io_preempt << std::endl;
-    outfile << "-- Overall preemptions: " << cpu_preempt + io_preempt << std::endl;
+    outfile << "-- Overall preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
 
 //    outfile.flush();
     outfile.close();

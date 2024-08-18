@@ -5,120 +5,248 @@
 #include <queue>
 #include <iomanip>
 #include <algorithm>
+#include <fstream>
+#include <map>
 
-rr::rr(std::vector<Process>& processes, int t_cs, int t_slice)
-        : processes(processes), t_cs(t_cs), t_slice(t_slice) {
-    simulate();
-}
 
-void rr::printQueue(std::queue<Process*> readyQueue) {
-    if (readyQueue.empty()) {
-        std::cout << "[Q empty]";
+
+std::string rr::get_queue_status() {
+    std::string result = "[Q";
+    if (q.empty()) {
+        result.append(" empty]");
     } else {
-        std::cout << "[Q";
-        std::queue<Process*> tempQueue = readyQueue;
-        while (!tempQueue.empty()) {
-            std::cout << " " << tempQueue.front()->id;
-            tempQueue.pop();
+        std::queue<Process> temp = q;
+        while(!temp.empty()) {
+            result.append(" " + temp.front().id);
+            temp.pop();
         }
-        std::cout << "]";
+        result.append("]");
     }
+
+    return result;
 }
 
 void rr::simulate() {
-    std::queue<Process*> readyQueue;
-    int currentTime = 0;
-    int contextSwitches = 0;
-    int preemptions = 0;
+    print_line("Simulator started for RR");
 
-    std::cout << "time 0ms: Simulator started for RR [Q empty]\n";
+    std::map<int, Process> io_bound_map;
+    std::priority_queue<int, std::vector<int>, std::greater<int> > io_bound_map_keys;
+    std::queue<int> times_entered_q;
+    std::map<std::string, int> cpu_burst_active; // map for seeing if current cpu burst has been done before
+    bool cpu_free = true;
+    int i = 0;
+    Process using_cpu;
+    int time_cpu_frees = -1;
+    int processes_killed = 0;
 
-    size_t processIndex = 0;
-    Process* currentProcess = nullptr;
-    int timeRemaining = 0;
 
-    while (!readyQueue.empty() || processIndex < processes.size() || currentProcess != nullptr) {
-        // Check if a new process arrives
-        while (processIndex < processes.size() && processes[processIndex].arrival_time <= currentTime) {
-            Process* newProcess = &processes[processIndex++];
-            readyQueue.push(newProcess);
-            std::cout << "time " << currentTime << "ms: Process " << newProcess->id << " arrived; added to ready queue ";
-            printQueue(readyQueue);
-            std::cout << "\n";
-        }
+    int total_cpu_time = 0;
 
-        // If no process is currently using the CPU, take the next one from the queue
-        if (currentProcess == nullptr && !readyQueue.empty()) {
-            currentProcess = readyQueue.front();
-            readyQueue.pop();
+    // Separate tracking for CPU-bound and I/O-bound processes
+    int cpu_bound_wait_time = 0, io_bound_wait_time = 0;
+    int cpu_bound_turnaround_time = 0, io_bound_turnaround_time = 0;
+    int cpu_bound_context_switches = 0, io_bound_context_switches = 0;
 
-            timeRemaining = std::min(t_slice, currentProcess->bursts[0]);
-            std::cout << "time " << currentTime << "ms: Process " << currentProcess->id
-                      << " started using the CPU for " << timeRemaining << "ms burst ";
-            printQueue(readyQueue);
-            std::cout << "\n";
-        }
+    // while there are processes alive
+    while (processes_killed < processes.size()) {
+        bool did_something = false;
 
-        if (currentProcess != nullptr) {
-            // Process the time slice or the remaining burst time
-            currentTime += timeRemaining;
-            currentProcess->bursts[0] -= timeRemaining;
+        if (i < processes.size()) {
+            int curr_arrival = processes[i].arrival_time;
+            if (curr_arrival >= elapsed_time && (time_cpu_frees == -1 || curr_arrival <= time_cpu_frees) &&
+                (io_bound_map_keys.empty() || curr_arrival <= io_bound_map_keys.top())) {
 
-            if (currentProcess->bursts[0] > 0) {
-                // Time slice expired but burst not completed, preempt process
-                std::cout << "time " << currentTime << "ms: Time slice expired; preempting process "
-                          << currentProcess->id << " with " << currentProcess->bursts[0] << "ms remaining ";
-                printQueue(readyQueue);
-                std::cout << "\n";
-                readyQueue.push(currentProcess);
-                preemptions++;
-            } else {
-                // Burst completed
-                currentProcess->bursts.erase(currentProcess->bursts.begin());
-                if (!currentProcess->bursts.empty()) {
-                    // More bursts remaining, process goes to I/O
-                    std::cout << "time " << currentTime << "ms: Process " << currentProcess->id
-                              << " completed a CPU burst; " << currentProcess->bursts.size() / 2 << " bursts to go ";
-                    printQueue(readyQueue);
-                    std::cout << "\n";
-                    std::cout << "time " << currentTime << "ms: Process " << currentProcess->id
-                              << " switching out of CPU; blocking on I/O until time "
-                              << (currentTime + currentProcess->bursts[0]) << "ms ";
-                    printQueue(readyQueue);
-                    std::cout << "\n";
-
-                    // Update process arrival time after I/O
-                    currentProcess->arrival_time = currentTime + currentProcess->bursts[0];
-                    readyQueue.push(currentProcess);
-                } else {
-                    // No bursts remaining, process terminates
-                    std::cout << "time " << currentTime << "ms: Process " << currentProcess->id << " terminated ";
-                    printQueue(readyQueue);
-                    std::cout << "\n";
+                q.push(processes[i]);
+                times_entered_q.push(elapsed_time);
+                elapsed_time = processes[i].arrival_time;
+                if (elapsed_time <= 9999) {
+                    print_line("Process " + processes[i].id + " arrived; added to ready queue");
                 }
+                i++;
+                cpu_burst_active[processes[i].id] = 0;
+                did_something = true;
             }
+        }
 
-            currentProcess = nullptr;  // CPU becomes idle
+        if (cpu_free && !q.empty() /* &&
+            (io_bound_map_keys.empty() || elapsed_time + (t_cs / 2) < io_bound_map_keys.top()) */) {
+            cpu_free = false;
+            elapsed_time += t_cs / 2;
+            using_cpu = q.front();
+            q.pop();
+            int wait_time = elapsed_time - times_entered_q.front() - (t_cs / 2);
+            times_entered_q.pop();
 
-            if (!readyQueue.empty() || processIndex < processes.size()) {
-                currentTime += t_cs / 2;  // Context switch out time
-                contextSwitches++;
-            }
-        } else {
-            // CPU idle, find the next event (next process arrival or next process returning from I/O)
-            int nextEventTime = (processIndex < processes.size()) ? processes[processIndex].arrival_time : INT_MAX;
-            if (currentProcess == nullptr && !readyQueue.empty()) {
-                nextEventTime = std::min(nextEventTime, readyQueue.front()->arrival_time);
-            }
-
-            // If there is a next event, move time to it
-            if (nextEventTime > currentTime) {
-                currentTime = nextEventTime;
+            if (using_cpu.is_cpu_bound) {
+                cpu_bound_wait_time += wait_time;
             } else {
-                currentTime++;
+                io_bound_wait_time += wait_time;
+            }
+
+            if (cpu_burst_active[using_cpu.id] == 0) {
+                cpu_burst_active[using_cpu.id] = using_cpu.bursts.front();
+                if (elapsed_time <= 9999) {
+                    print_line("Process " + using_cpu.id + " started using the CPU for " +
+                               std::to_string(using_cpu.bursts.front()) + "ms burst");
+                }
+            } else if (elapsed_time <= 9999) {
+                print_line("Process " + using_cpu.id + " started using the CPU for remaining " +
+                           std::to_string(using_cpu.bursts.front()) + "ms of " +
+                           std::to_string(cpu_burst_active[using_cpu.id]) + "ms burst");
+            }
+
+            int turn_around = using_cpu.bursts.front() + t_cs;
+            if (using_cpu.is_cpu_bound) {
+                cpu_bound_turnaround_time += turn_around;
+            } else {
+                io_bound_turnaround_time += turn_around;
+            }
+
+            total_cpu_time += using_cpu.bursts.front();
+//            using_cpu.bursts.erase(using_cpu.bursts.begin());
+
+            if (using_cpu.is_cpu_bound) {
+                cpu_bound_context_switches++;
+            } else {
+                io_bound_context_switches++;
+            }
+
+            time_cpu_frees = t_slc < using_cpu.bursts.front() ? t_slc + elapsed_time : using_cpu.bursts.front() + elapsed_time;
+            using_cpu.bursts.front() -= t_slc;
+
+            did_something = true;
+        }
+
+        if (!did_something || time_cpu_frees == elapsed_time ||
+            (!io_bound_map_keys.empty() && io_bound_map_keys.top() == elapsed_time)) {
+            if (time_cpu_frees > 0 && time_cpu_frees <= (!io_bound_map_keys.empty() ? io_bound_map_keys.top() : time_cpu_frees)) {
+                elapsed_time = time_cpu_frees;
+                if (using_cpu.bursts.front() <= 0) {
+                    // IF PROCESS COMPLETES AND DOESN'T GET CUT OFF
+                    time_cpu_frees = -1;
+                    cpu_free = true;
+                    // pops CPU burst
+                    using_cpu.bursts.erase(using_cpu.bursts.begin());
+
+                    int burst = using_cpu.bursts.front();
+                    cpu_burst_active[using_cpu.id] = 0;
+                    if (elapsed_time <= 9999 && using_cpu.bursts.size() > 0) {
+                        print_line("Process " + using_cpu.id + " completed a CPU burst; " +
+                            std::to_string((using_cpu.bursts.size() / 2)) + " burst" +
+                            ((using_cpu.bursts.size() / 2) > 1 ? "s" : "") + " to go");
+                        print_line("Process " + using_cpu.id + " switching out of CPU; blocking on I/O until time " +
+                            std::to_string(elapsed_time + burst + (t_cs / 2)) + "ms");
+                    }
+
+                    if (using_cpu.bursts.empty()) {
+                        print_line("Process " + using_cpu.id + " terminated");
+                        processes_killed++;
+                    } else {
+                        using_cpu.bursts.erase(using_cpu.bursts.begin());
+                        io_bound_map[elapsed_time + burst + (t_cs / 2)] = using_cpu;
+                        io_bound_map_keys.push(elapsed_time + burst + (t_cs / 2));
+                    }
+                    elapsed_time += t_cs / 2;
+                } else if (q.empty()) {
+                    // IF SLICE ENDS AND THERE IS NOTHING IN THE QUEUE
+                    time_cpu_frees = t_slc < using_cpu.bursts.front() ? t_slc + elapsed_time : using_cpu.bursts.front() + elapsed_time;
+                    using_cpu.bursts.front() -= t_slc;
+                    if (elapsed_time <= 9999) {
+                        print_line("Time slice expired; no preemption because ready queue is empty");
+                    }
+                } else {
+                    if (elapsed_time <= 9999) {
+                        // if allowed
+                        print_line("Time slice expired; preempting process " + using_cpu.id + " with " +
+                                std::to_string(using_cpu.bursts.front()) + "ms remaining");
+                    }
+                    if (using_cpu.is_cpu_bound) {
+                        cpu_preempt++;
+                    } else {
+                        io_preempt++;
+                    }
+                    q.push(using_cpu);
+                    times_entered_q.push(elapsed_time);
+                    using_cpu = q.front();
+                    q.pop();
+                    elapsed_time += t_cs;
+
+                    if (cpu_burst_active[using_cpu.id] == 0) {
+                        cpu_burst_active[using_cpu.id] = using_cpu.bursts.front();
+                        if (elapsed_time <= 9999) {
+                            print_line("Process " + using_cpu.id + " started using the CPU for " +
+                                       std::to_string(using_cpu.bursts.front()) + "ms burst");
+                        }
+                    } else if (elapsed_time <= 9999) {
+                        print_line("Process " + using_cpu.id + " started using the CPU for remaining " +
+                                   std::to_string(using_cpu.bursts.front()) + "ms of " +
+                                   std::to_string(cpu_burst_active[using_cpu.id]) + "ms burst");
+                    }
+
+                    int wait_time = elapsed_time - times_entered_q.front() - (t_cs / 2);
+                    times_entered_q.pop();
+                    if (using_cpu.is_cpu_bound) {
+                        cpu_bound_wait_time += wait_time;
+                    } else {
+                        io_bound_wait_time += wait_time;
+                    }
+                    if (using_cpu.is_cpu_bound) {
+                        cpu_bound_context_switches++;
+                    } else {
+                        io_bound_context_switches++;
+                    }
+                    time_cpu_frees = t_slc < using_cpu.bursts.front() ? t_slc + elapsed_time : using_cpu.bursts.front() + elapsed_time;
+                    using_cpu.bursts.front() -= t_slc;
+                }
+
+            } else if (io_bound_map_keys.size() > 0 && (time_cpu_frees >= io_bound_map_keys.top() || time_cpu_frees == -1)) {
+                elapsed_time = io_bound_map_keys.top();
+                q.push(io_bound_map[elapsed_time]);
+                times_entered_q.push(elapsed_time);
+                if (elapsed_time == 4592) {
+                    elapsed_time = 4592;
+                }
+                if (elapsed_time <= 9999) {
+                    print_line("Process " + io_bound_map[elapsed_time].id + " completed I/O; added to ready queue");
+                }
+                io_bound_map.erase(elapsed_time);
+                io_bound_map_keys.pop();
             }
         }
     }
 
-    std::cout << "time " << currentTime << "ms: Simulator ended for RR [Q empty]\n";
+    print_line("Simulator ended for RR");
+
+    cpu_util = (double)total_cpu_time / elapsed_time;
+    cpu_turn = (double)cpu_bound_turnaround_time / cpu_bound_context_switches;
+    io_turn = (double)io_bound_turnaround_time / io_bound_context_switches;
+
+    cpu_wait = (double)cpu_bound_wait_time / cpu_bound_context_switches;
+    io_wait = (double)io_bound_wait_time / (double) (io_bound_context_switches / 2);
+    num_cpu_switches = cpu_bound_context_switches;
+    num_io_switches = io_bound_context_switches;
+}
+
+
+void rr::write_statistics(const std::string& filename) {
+    // TODO: Fix bugs with data collection for this
+    std::ofstream outfile(filename, std::ios::app);
+
+    outfile << "Algorithm RR" << std::endl;
+    outfile << "-- CPU utilization: " << std::fixed << std::setprecision(3) << (std::ceil(cpu_util * 100000) / 1000) << "%" << std::endl;
+    outfile << "-- CPU-bound average wait time: " << std::fixed << std::setprecision(3) << cpu_wait << " ms" << std::endl;
+    outfile << "-- I/O-bound average wait time: " << std::fixed << std::setprecision(3) << io_wait << " ms" << std::endl;
+    outfile << "-- Overall average wait time: " << std::fixed << std::setprecision(3) << ((cpu_wait + io_wait) / 2) << " ms" << std::endl;
+    outfile << "-- CPU-bound average turnaround time: " << std::fixed << std::setprecision(3) << cpu_turn << " ms" << std::endl;
+    outfile << "-- I/O-bound average turnaround time: " << std::fixed << std::setprecision(3) << io_turn << " ms" << std::endl;
+    outfile << "-- Overall average turnaround time: " << std::fixed << std::setprecision(3) << ((cpu_turn + io_turn) / 2) << " ms" << std::endl;
+    outfile << "-- CPU-bound context switches: " << num_cpu_switches << std::endl;
+    outfile << "-- I/O-bound context switches: " << num_io_switches << std::endl;
+    outfile << "-- Overall context switches: " << num_cpu_switches + num_io_switches << std::endl;
+    outfile << "-- CPU-bound preemptions: " << cpu_preempt << std::endl;
+    outfile << "-- I/O-bound preemptions: " << io_preempt << std::endl;
+    outfile << "-- Overall preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
+
+//    outfile.flush();
+    outfile.close();
 }
