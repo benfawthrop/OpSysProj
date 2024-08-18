@@ -58,6 +58,7 @@ private:
     int io_bound_context_switches;
     int cpu_bound_preemptions;
     int io_bound_preemptions;
+    static bool compare_by_arrival_time(const Process& a, const Process& b);
 
     std::map<int, Process> io_bound_map;
     std::priority_queue<int, std::vector<int>, std::greater<int> > io_bound_map_keys;

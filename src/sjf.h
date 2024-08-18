@@ -31,6 +31,8 @@ private:
     int num_cpu_switches, num_io_switches;
 
     static bool CompareTau(const Process &a, const Process &b);
+    static bool compare_by_arrival_time(const Process& a, const Process& b);
+
     double calculate_new_tau(double old_tau, int actual_burst, double alpha, double lambda);
 
     void print_event(int time, const std::string &event, const std::vector<Process> &ready_queue);

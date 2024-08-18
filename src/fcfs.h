@@ -7,6 +7,7 @@
 #include "rng.h"
 #include "process.h"
 #include <queue>
+#include <cmath>
 
 
 
@@ -38,6 +39,11 @@ private:
     void print_line(const std::string& message) {
         std::cout << "time " << elapsed_time << "ms: " << message << " " << get_queue_status() << std::endl;
     }
+    // Define the comparison function
+    static bool compare_by_arrival_time(const Process& a, const Process& b) {
+        return a.arrival_time < b.arrival_time;
+    }
+
 };
 
 #endif // OPSYSPROJ_FCFS_H

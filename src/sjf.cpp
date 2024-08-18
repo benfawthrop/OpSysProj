@@ -51,9 +51,16 @@ void sjf::print_event(int time, const std::string &event, const std::vector<Proc
 bool sjf::processHasId(const Process& p, const std::string& id) {
     return p.id == id;
 }
+// Define the comparison function
+bool sjf::compare_by_arrival_time(const Process& a, const Process& b) {
+    return a.arrival_time < b.arrival_time;
+}
+
 
 // The simulate function implementation, including tau recalculation and event handling
 void sjf::simulate() {
+    std::sort(processes.begin(), processes.end(), compare_by_arrival_time);
+
     print_event(0, "Simulator started for SJF", ready_queue);
     std::map<int, Process> io_bound_map;
     std::priority_queue<int, std::vector<int>, std::greater<int> > io_bound_map_keys;
@@ -221,16 +228,16 @@ void sjf::write_statistics(const std::string& filename) const {
     outfile << "-- CPU utilization: " << std::fixed << std::setprecision(3) << (cpu_util * 100) << "%" << std::endl;
     outfile << "-- CPU-bound average wait time: " << std::fixed << std::setprecision(3) << (cpu_bound_context_switches > 0 ? cpu_wait : 0) << " ms" << std::endl;
     outfile << "-- I/O-bound average wait time: " << std::fixed << std::setprecision(3) << (io_bound_context_switches > 0 ? io_wait : 0) << " ms" << std::endl;
-    outfile << "-- Overall average wait time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_wait + io_wait) / 2) : 0) << " ms" << std::endl;
+    outfile << "-- overall average wait time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_wait + io_wait) / 2) : 0) << " ms" << std::endl;
     outfile << "-- CPU-bound average turnaround time: " << std::fixed << std::setprecision(3) << (cpu_bound_context_switches > 0 ? cpu_turn : 0) << " ms" << std::endl;
     outfile << "-- I/O-bound average turnaround time: " << std::fixed << std::setprecision(3) << (io_bound_context_switches > 0 ? io_turn : 0) << " ms" << std::endl;
-    outfile << "-- Overall average turnaround time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_turn + io_turn) / 2) : 0) << " ms" << std::endl;
+    outfile << "-- overall average turnaround time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_turn + io_turn) / 2) : 0) << " ms" << std::endl;
     outfile << "-- CPU-bound number of context switches: " << num_cpu_switches << std::endl;
     outfile << "-- I/O-bound number of context switches: " << num_io_switches << std::endl;
-    outfile << "-- Overall number of context switches: " << num_cpu_switches + num_io_switches << std::endl;
+    outfile << "-- overall number of context switches: " << num_cpu_switches + num_io_switches << std::endl;
     outfile << "-- CPU-bound number of preemptions: " << cpu_preempt << std::endl;
     outfile << "-- I/O-bound number of preemptions: " << io_preempt << std::endl;
-    outfile << "-- Overall number of preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
+    outfile << "-- overall number of preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
 
     outfile.close();
 }
