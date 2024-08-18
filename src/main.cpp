@@ -60,7 +60,7 @@ void parse_arguments(int argc, char** argv, int &n, int &ncpu, int &seed, double
                      int &context_time, double &alpha, int &slice_time) {
     // error checking
     if (argc != 9) {
-        std::cerr << "ERROR: Incorrect number of arguments" << std::endl;
+        std::cerr << "ERROR: Incorrect number of arguments " << argc << std::endl;
         std::exit(1);
     }
 
@@ -189,7 +189,7 @@ void part1_print(const std::vector<Process>& processes, int n, int ncpu, int see
         bool is_cpu_bound = p.is_cpu_bound;
         std::cout << (is_cpu_bound ? "CPU-bound" : "I/O-bound") << " process " << p.id << ": arrival time " <<
                   p.arrival_time << "ms; " << (p.bursts.size() / 2) + 1 << " CPU burst" <<
-                  ((p.bursts.size() / 2) + 1 == 1 ? "" : "s") << ":" << std::endl;
+                  ((p.bursts.size() / 2) + 1 == 1 ? "" : "s") /* << ":"*/ << std::endl;
     }
 }
 
@@ -273,7 +273,7 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
     out << "-- I/O-bound average I/O burst time: " << std::fixed << std::setprecision(3) <<
         avg_io_bound_io_burst_time << " ms" << std::endl;
     out << "-- overall average I/O burst time: " << std::fixed << std::setprecision(3) <<
-        overall_avg_io_burst_time << " ms" << std::endl;
+        overall_avg_io_burst_time << " ms" << std::endl << std::endl;
     out.close();
 }
 
@@ -289,18 +289,22 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
  * t_slc -> slice time
  */
 void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_slice) {
+    std::cout << std::endl;
     std::cout << "<<< PROJECT PART II\n<<< -- t_cs=" << t_cs << "ms; alpha=" << std::setprecision(2) <<
-            alpha << "; t_slice=" << t_slice << std::endl;
+            alpha << "; t_slice=" << t_slice << "ms" << std::endl;
 
     // here is where we call of the individual classes for our algorithms
-    fcfs start = fcfs(processes, t_cs);
+    fcfs FCFS(processes, t_cs);
+    std::cout << std::endl;
+    FCFS.write_statistics("simout.txt");
     ///ricky added this for sjf
-    sjf sjf_scheduler(processes, t_cs, alpha);
-    sjf_scheduler.simulate();
+//    sjf sjf_scheduler(processes, t_cs, alpha);
+//    sjf_scheduler.simulate();
 
+//    srt SRT = srt(processes, )
 
-    /// jimmy added this for rr
-    rr rrScheduler = rr(processes, t_cs, t_slice);
+    rr RR(processes, t_cs, t_slice);
+    RR.write_statistics("simout.txt");
 
 
 
@@ -317,8 +321,9 @@ int main(int argc, char** argv) {
     std::vector<Process> processes = generate_processes(rng, n, ncpu, lambda, bound);
 
     part1_print(processes, n, ncpu, seed, lambda, bound);
-    part2_print(processes, context_time, alpha, slice_time);
     write_statistics(processes, "simout.txt");
+    part2_print(processes, context_time, alpha, slice_time);
+
 
 
 
