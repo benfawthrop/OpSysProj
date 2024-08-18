@@ -24,10 +24,10 @@ Algorithm FCFS
 -- Overall preemptions: 0
 
 Algorithm RR
--- CPU utilization: 81.474%
+-- CPU utilization: 72.806%
 -- CPU-bound average wait time: 104.244 ms
--- I/O-bound average wait time: 375.286 ms
--- Overall average wait time: 239.765 ms
+-- I/O-bound average wait time: 362.345 ms
+-- Overall average wait time: 233.295 ms
 -- CPU-bound average turnaround time: 1085.600 ms
 -- I/O-bound average turnaround time: 56.655 ms
 -- Overall average turnaround time: 571.128 ms
@@ -37,4 +37,7 @@ Algorithm RR
 -- CPU-bound preemptions: 20
 -- I/O-bound preemptions: 9
 -- Overall preemptions: 29
+-- CPU-bound percentage of CPU bursts completed within one time slice: 12.000%
+-- I/O-bound percentage of CPU bursts completed within one time slice: 70.000%
+-- overall percentage of CPU bursts completed within one time slice: 37.778%
 

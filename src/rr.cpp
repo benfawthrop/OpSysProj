@@ -45,7 +45,8 @@ void rr::simulate() {
     // Separate tracking for CPU-bound and I/O-bound processes
     int cpu_bound_wait_time = 0, io_bound_wait_time = 0;
     int cpu_bound_turnaround_time = 0, io_bound_turnaround_time = 0;
-    int cpu_bound_context_switches = 0, io_bound_context_switches = 0;
+    int cpu_bursts_count = 0, io_bursts_count = 0;
+    int cpu_one_slice = 0, io_one_slice = 0;
 
     // while there are processes alive
     while (processes_killed < processes.size()) {
@@ -89,6 +90,19 @@ void rr::simulate() {
                     print_line("Process " + using_cpu.id + " started using the CPU for " +
                                std::to_string(using_cpu.bursts.front()) + "ms burst");
                 }
+                
+                if (using_cpu.is_cpu_bound) {
+                    cpu_bursts_count++;
+                    if (t_slc > using_cpu.bursts.front()) {
+                        cpu_one_slice++;
+                    }
+                } else {
+                    io_bursts_count++;
+                    if (t_slc > using_cpu.bursts.front()) {
+                        io_one_slice++;
+                    }
+                }
+
             } else if (elapsed_time <= 9999) {
                 print_line("Process " + using_cpu.id + " started using the CPU for remaining " +
                            std::to_string(using_cpu.bursts.front()) + "ms of " +
@@ -102,16 +116,16 @@ void rr::simulate() {
                 io_bound_turnaround_time += turn_around;
             }
 
-            total_cpu_time += using_cpu.bursts.front();
-//            using_cpu.bursts.erase(using_cpu.bursts.begin());
+//            total_cpu_time += using_cpu.bursts.front();
 
             if (using_cpu.is_cpu_bound) {
-                cpu_bound_context_switches++;
+                num_cpu_switches++;
             } else {
-                io_bound_context_switches++;
+                num_io_switches++;
             }
 
             time_cpu_frees = t_slc < using_cpu.bursts.front() ? t_slc + elapsed_time : using_cpu.bursts.front() + elapsed_time;
+            total_cpu_time += time_cpu_frees - elapsed_time;
             using_cpu.bursts.front() -= t_slc;
 
             did_something = true;
@@ -125,8 +139,11 @@ void rr::simulate() {
                     // IF PROCESS COMPLETES AND DOESN'T GET CUT OFF
                     time_cpu_frees = -1;
                     cpu_free = true;
+
+                    
                     // pops CPU burst
                     using_cpu.bursts.erase(using_cpu.bursts.begin());
+                    
 
                     int burst = using_cpu.bursts.front();
                     cpu_burst_active[using_cpu.id] = 0;
@@ -150,6 +167,7 @@ void rr::simulate() {
                 } else if (q.empty()) {
                     // IF SLICE ENDS AND THERE IS NOTHING IN THE QUEUE
                     time_cpu_frees = t_slc < using_cpu.bursts.front() ? t_slc + elapsed_time : using_cpu.bursts.front() + elapsed_time;
+                    total_cpu_time += time_cpu_frees - elapsed_time;
                     using_cpu.bursts.front() -= t_slc;
                     if (elapsed_time <= 9999) {
                         print_line("Time slice expired; no preemption because ready queue is empty");
@@ -177,6 +195,17 @@ void rr::simulate() {
                             print_line("Process " + using_cpu.id + " started using the CPU for " +
                                        std::to_string(using_cpu.bursts.front()) + "ms burst");
                         }
+                        if (using_cpu.is_cpu_bound) {
+                            cpu_bursts_count++;
+                            if (t_slc > using_cpu.bursts.front()) {
+                                cpu_one_slice++;
+                            }
+                        } else {
+                            io_bursts_count++;
+                            if (t_slc > using_cpu.bursts.front()) {
+                                io_one_slice++;
+                            }
+                        }
                     } else if (elapsed_time <= 9999) {
                         print_line("Process " + using_cpu.id + " started using the CPU for remaining " +
                                    std::to_string(using_cpu.bursts.front()) + "ms of " +
@@ -191,11 +220,12 @@ void rr::simulate() {
                         io_bound_wait_time += wait_time;
                     }
                     if (using_cpu.is_cpu_bound) {
-                        cpu_bound_context_switches++;
+                        num_cpu_switches++;
                     } else {
-                        io_bound_context_switches++;
+                        num_io_switches++;
                     }
                     time_cpu_frees = t_slc < using_cpu.bursts.front() ? t_slc + elapsed_time : using_cpu.bursts.front() + elapsed_time;
+                    total_cpu_time += time_cpu_frees - elapsed_time;
                     using_cpu.bursts.front() -= t_slc;
                 }
 
@@ -203,9 +233,6 @@ void rr::simulate() {
                 elapsed_time = io_bound_map_keys.top();
                 q.push(io_bound_map[elapsed_time]);
                 times_entered_q.push(elapsed_time);
-                if (elapsed_time == 4592) {
-                    elapsed_time = 4592;
-                }
                 if (elapsed_time <= 9999) {
                     print_line("Process " + io_bound_map[elapsed_time].id + " completed I/O; added to ready queue");
                 }
@@ -218,13 +245,15 @@ void rr::simulate() {
     print_line("Simulator ended for RR");
 
     cpu_util = (double)total_cpu_time / elapsed_time;
-    cpu_turn = (double)cpu_bound_turnaround_time / cpu_bound_context_switches;
-    io_turn = (double)io_bound_turnaround_time / io_bound_context_switches;
+    cpu_turn = (double)cpu_bound_turnaround_time / num_cpu_switches;
+    io_turn = (double)io_bound_turnaround_time / num_io_switches;
 
-    cpu_wait = (double)cpu_bound_wait_time / cpu_bound_context_switches;
-    io_wait = (double)io_bound_wait_time / (double) (io_bound_context_switches / 2);
-    num_cpu_switches = cpu_bound_context_switches;
-    num_io_switches = io_bound_context_switches;
+    cpu_wait = (double)cpu_bound_wait_time / num_cpu_switches;
+    io_wait = (double)io_bound_wait_time / ((double) num_io_switches / 2);
+
+    cpu_bursts_in_slice = (double) cpu_one_slice / (double) cpu_bursts_count;
+    io_bursts_in_slice = (double) io_one_slice / (double) io_bursts_count;
+    total_in_slice = ((double) cpu_one_slice + io_one_slice) / ((double) cpu_bursts_count + io_bursts_count);
 }
 
 
@@ -245,7 +274,10 @@ void rr::write_statistics(const std::string& filename) {
     outfile << "-- Overall context switches: " << num_cpu_switches + num_io_switches << std::endl;
     outfile << "-- CPU-bound preemptions: " << cpu_preempt << std::endl;
     outfile << "-- I/O-bound preemptions: " << io_preempt << std::endl;
-    outfile << "-- Overall preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
+    outfile << "-- Overall preemptions: " << cpu_preempt + io_preempt << std::endl;
+    outfile << "-- CPU-bound percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << cpu_bursts_in_slice * 100 << "%\n";
+    outfile << "-- I/O-bound percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << io_bursts_in_slice * 100 << "%\n";
+    outfile << "-- overall percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << total_in_slice * 100 << "%\n" << std::endl;
 
 //    outfile.flush();
     outfile.close();
