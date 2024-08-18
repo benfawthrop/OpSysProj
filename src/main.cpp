@@ -301,7 +301,12 @@ void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_s
     sjf sjf_scheduler(processes, t_cs, alpha, lambda);
     sjf_scheduler.simulate();
 
-//    srt SRT = srt(processes, )
+    std::cout << std::endl;
+
+    srt SRT = srt(processes, t_cs, alpha, lambda);
+    SRT.simulate();
+
+    std::cout << std::endl;
 
     rr RR(processes, t_cs, t_slice);
     RR.write_statistics("simout.txt");
