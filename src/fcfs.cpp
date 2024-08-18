@@ -5,6 +5,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include <cmath>
 
 
 void fcfs::sim_and_print() {
@@ -28,10 +29,10 @@ void fcfs::sim_and_print() {
     int cpu_bound_context_switches = 0, io_bound_context_switches = 0;
 
     // while there are processes alive
-    while (processes_killed < processes.size()) {
+    while (processes_killed < (int) processes.size()) {
         bool did_something = false;
 
-        if (i < processes.size()) {
+        if (i < (int) processes.size()) {
             int curr_arrival = processes[i].arrival_time;
             if (curr_arrival >= elapsed_time && (time_cpu_frees == -1 || curr_arrival <= time_cpu_frees) &&
                 (io_bound_map_keys.empty() || curr_arrival <= io_bound_map_keys.top())) {

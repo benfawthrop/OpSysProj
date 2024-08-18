@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
+#include <cmath>
 
 
 
@@ -49,10 +50,10 @@ void rr::simulate() {
     int cpu_one_slice = 0, io_one_slice = 0;
 
     // while there are processes alive
-    while (processes_killed < processes.size()) {
+    while (processes_killed < (int) processes.size()) {
         bool did_something = false;
 
-        if (i < processes.size()) {
+        if (i < (int) processes.size()) {
             int curr_arrival = processes[i].arrival_time;
             if (curr_arrival >= elapsed_time && (time_cpu_frees == -1 || curr_arrival <= time_cpu_frees) &&
                 (io_bound_map_keys.empty() || curr_arrival <= io_bound_map_keys.top())) {
@@ -277,7 +278,7 @@ void rr::write_statistics(const std::string& filename) {
     outfile << "-- Overall preemptions: " << cpu_preempt + io_preempt << std::endl;
     outfile << "-- CPU-bound percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << cpu_bursts_in_slice * 100 << "%\n";
     outfile << "-- I/O-bound percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << io_bursts_in_slice * 100 << "%\n";
-    outfile << "-- overall percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << total_in_slice * 100 << "%\n" << std::endl;
+    outfile << "-- overall percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << total_in_slice * 100 << "%\n";
 
 //    outfile.flush();
     outfile.close();
