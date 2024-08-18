@@ -1,0 +1,14 @@
+Algorithm FCFS
+-- CPU utilization: 68.120%
+-- CPU-bound average wait time: 26360.400 ms
+-- I/O-bound average wait time: 26114.000 ms
+-- Overall average wait time: 26237.200 ms
+-- CPU-bound average turnaround time: 2073.160 ms
+-- I/O-bound average turnaround time: 3878.300 ms
+-- Overall average turnaround time: 2975.730 ms
+-- CPU-bound context switches: 0
+-- I/O-bound context switches: 0
+-- Overall context switches: 0
+-- CPU-bound preemptions: 0
+-- I/O-bound preemptions: 0
+-- Overall preemptions: 0

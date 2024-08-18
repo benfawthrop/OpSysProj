@@ -1,0 +1,4 @@
+/Users/benjamin/Desktop/OpSysProj/src/cmake-build-debug/CMakeFiles/MAIN.dir
+/Users/benjamin/Desktop/OpSysProj/src/cmake-build-debug/CMakeFiles/run_with_redirect.dir
+/Users/benjamin/Desktop/OpSysProj/src/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/benjamin/Desktop/OpSysProj/src/cmake-build-debug/CMakeFiles/rebuild_cache.dir
