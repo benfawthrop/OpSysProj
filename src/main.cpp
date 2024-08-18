@@ -288,7 +288,7 @@ void write_statistics(const std::vector<Process>& processes, const std::string& 
  * alpha -> alpha used for SRT and SJF
  * t_slc -> slice time
  */
-void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_slice) {
+void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_slice, double lambda) {
     std::cout << std::endl;
     std::cout << "<<< PROJECT PART II\n<<< -- t_cs=" << t_cs << "ms; alpha=" << std::setprecision(2) <<
             alpha << "; t_slice=" << t_slice << "ms" << std::endl;
@@ -298,8 +298,8 @@ void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_s
     std::cout << std::endl;
     FCFS.write_statistics("simout.txt");
     ///ricky added this for sjf
-//    sjf sjf_scheduler(processes, t_cs, alpha);
-//    sjf_scheduler.simulate();
+    sjf sjf_scheduler(processes, t_cs, alpha, lambda);
+    sjf_scheduler.simulate();
 
 //    srt SRT = srt(processes, )
 
@@ -322,7 +322,7 @@ int main(int argc, char** argv) {
 
     part1_print(processes, n, ncpu, seed, lambda, bound);
     write_statistics(processes, "simout.txt");
-    part2_print(processes, context_time, alpha, slice_time);
+    part2_print(processes, context_time, alpha, slice_time, lambda);
 
 
 

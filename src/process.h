@@ -16,6 +16,10 @@ public:
     bool is_cpu_bound;
     double tau; ///added this for sjf
 
+    bool operator==(const Process &other) const {
+        return this->id == other.id;
+    }
+
 //    Process& operator=(const Process &other);
 };
 
