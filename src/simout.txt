@@ -23,6 +23,36 @@ Algorithm FCFS
 -- I/O-bound preemptions: 0
 -- Overall preemptions: 0
 
+Algorithm SJF
+-- CPU utilization: 68.342%
+-- CPU-bound average wait time: 26089.960 ms
+-- I/O-bound average wait time: 25945.500 ms
+-- Overall average wait time: 26017.730 ms
+-- CPU-bound average turnaround time: 27692.600 ms
+-- I/O-bound average turnaround time: 26194.800 ms
+-- Overall average turnaround time: 26943.700 ms
+-- CPU-bound number of context switches: 25
+-- I/O-bound number of context switches: 20
+-- Overall number of context switches: 45
+-- CPU-bound number of preemptions: 0
+-- I/O-bound number of preemptions: 0
+-- Overall number of preemptions: 0
+
+Algorithm SRT
+-- CPU utilization: 0.000%
+-- CPU-bound average wait time: 0.000 ms
+-- I/O-bound average wait time: 0.000 ms
+-- Overall average wait time: 0.000 ms
+-- CPU-bound average turnaround time: 0.000 ms
+-- I/O-bound average turnaround time: 0.000 ms
+-- Overall average turnaround time: 0.000 ms
+-- CPU-bound number of context switches: 8
+-- I/O-bound number of context switches: 10
+-- Overall number of context switches: 18
+-- CPU-bound number of preemptions: 3
+-- I/O-bound number of preemptions: 5
+-- Overall number of preemptions: 8
+
 Algorithm RR
 -- CPU utilization: 72.806%
 -- CPU-bound average wait time: 104.244 ms

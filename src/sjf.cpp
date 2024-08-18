@@ -5,6 +5,7 @@
 #include <cmath>
 #include <algorithm>
 #include <map>
+#include <fstream>
 
 // Helper function to calculate the new tau
 double sjf::calculate_new_tau(double old_tau, int actual_burst, double alpha, double lambda) {
@@ -21,7 +22,12 @@ bool sjf::CompareTau(const Process &a, const Process &b) {
 
 // sjf constructor definition
 sjf::sjf(std::vector<Process> processes, int context_time, double alpha, double lambda)
-        : processes(processes), context_time(context_time), alpha(alpha), lambda(lambda), elapsed_time(0) {
+        : processes(processes), context_time(context_time), alpha(alpha), lambda(lambda), elapsed_time(0),
+          total_cpu_time(0), cpu_bound_wait_time(0), io_bound_wait_time(0),
+          cpu_bound_turnaround_time(0), io_bound_turnaround_time(0),
+          cpu_bound_context_switches(0), io_bound_context_switches(0),
+          cpu_preempt(0), io_preempt(0), cpu_util(0.0), cpu_turn(0.0), io_turn(0.0), cpu_wait(0.0), io_wait(0.0),
+          num_cpu_switches(0), num_io_switches(0) {
     // Initial tau setup for each process
     for (size_t i = 0; i < this->processes.size(); ++i) {
         this->processes[i].tau = std::ceil(1 / lambda);  // Initial tau value based on lambda
@@ -90,6 +96,15 @@ void sjf::simulate() {
             time_cpu_frees = burst + elapsed_time;
             ready_queue.erase(ready_queue.begin());
 
+            int wait_time = elapsed_time - using_cpu.arrival_time - (context_time / 2);  // Calculate the wait time
+            if (using_cpu.is_cpu_bound) {
+                cpu_bound_wait_time += wait_time;
+            } else {
+                io_bound_wait_time += wait_time;
+            }
+
+            total_cpu_time += burst;  // Track total CPU time
+
             if (elapsed_time <= 9999) {
                 print_event(elapsed_time, "Process " + using_cpu.id + " (tau " + std::to_string(static_cast<int>(std::round(using_cpu.tau))) +
                                           "ms) started using the CPU for " + std::to_string(burst) + "ms burst", ready_queue);
@@ -110,6 +125,16 @@ void sjf::simulate() {
                 if (elapsed_time <= 9999) {
                     print_event(elapsed_time, "Process " + using_cpu.id + " (tau " + std::to_string(static_cast<int>(std::round(using_cpu.tau))) +
                                               "ms) completed a CPU burst; " + std::to_string(using_cpu.bursts.size() / 2) + " bursts to go", ready_queue);
+                }
+
+                // Track turnaround time
+                int turnaround_time = elapsed_time - using_cpu.arrival_time;
+                if (using_cpu.is_cpu_bound) {
+                    cpu_bound_turnaround_time += turnaround_time;
+                    cpu_bound_context_switches++;
+                } else {
+                    io_bound_turnaround_time += turnaround_time;
+                    io_bound_context_switches++;
                 }
 
                 // Check if the process has more bursts to execute
@@ -171,4 +196,41 @@ void sjf::simulate() {
     }
 
     print_event(elapsed_time, "Simulator ended for SJF", ready_queue);
+
+    // Update statistics after simulation
+    if (elapsed_time > 0) {
+        cpu_util = (double)total_cpu_time / elapsed_time;
+    }
+    if (cpu_bound_context_switches > 0) {
+        cpu_turn = (double)cpu_bound_turnaround_time / cpu_bound_context_switches;
+        cpu_wait = (double)cpu_bound_wait_time / cpu_bound_context_switches;
+    }
+    if (io_bound_context_switches > 0) {
+        io_turn = (double)io_bound_turnaround_time / io_bound_context_switches;
+        io_wait = (double)io_bound_wait_time / io_bound_context_switches;
+    }
+    num_cpu_switches = cpu_bound_context_switches;
+    num_io_switches = io_bound_context_switches;
+}
+
+// Implementing the write_statistics function for SJF
+void sjf::write_statistics(const std::string& filename) const {
+    std::fstream outfile(filename, std::ios::app);
+
+    outfile << "Algorithm SJF" << std::endl;
+    outfile << "-- CPU utilization: " << std::fixed << std::setprecision(3) << (cpu_util * 100) << "%" << std::endl;
+    outfile << "-- CPU-bound average wait time: " << std::fixed << std::setprecision(3) << (cpu_bound_context_switches > 0 ? cpu_wait : 0) << " ms" << std::endl;
+    outfile << "-- I/O-bound average wait time: " << std::fixed << std::setprecision(3) << (io_bound_context_switches > 0 ? io_wait : 0) << " ms" << std::endl;
+    outfile << "-- Overall average wait time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_wait + io_wait) / 2) : 0) << " ms" << std::endl;
+    outfile << "-- CPU-bound average turnaround time: " << std::fixed << std::setprecision(3) << (cpu_bound_context_switches > 0 ? cpu_turn : 0) << " ms" << std::endl;
+    outfile << "-- I/O-bound average turnaround time: " << std::fixed << std::setprecision(3) << (io_bound_context_switches > 0 ? io_turn : 0) << " ms" << std::endl;
+    outfile << "-- Overall average turnaround time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_turn + io_turn) / 2) : 0) << " ms" << std::endl;
+    outfile << "-- CPU-bound number of context switches: " << num_cpu_switches << std::endl;
+    outfile << "-- I/O-bound number of context switches: " << num_io_switches << std::endl;
+    outfile << "-- Overall number of context switches: " << num_cpu_switches + num_io_switches << std::endl;
+    outfile << "-- CPU-bound number of preemptions: " << cpu_preempt << std::endl;
+    outfile << "-- I/O-bound number of preemptions: " << io_preempt << std::endl;
+    outfile << "-- Overall number of preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
+
+    outfile.close();
 }

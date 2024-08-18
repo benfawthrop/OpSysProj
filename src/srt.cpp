@@ -2,6 +2,7 @@
 #include <cmath>
 #include <iomanip>
 #include <queue>
+#include <fstream>
 
 // Helper function to print events and queue status
 void srt::print_event(int time, const std::string &event, const std::priority_queue<Process, std::vector<Process>, CompareRemainingTime> &ready_queue) {
@@ -32,6 +33,10 @@ void srt::simulate() {
     int time_cpu_frees = -1;  // Time when the CPU becomes free
     int context_switch_time_remaining = 0;
 
+    int total_cpu_time = 0;
+    int cpu_bound_wait_time = 0, io_bound_wait_time = 0;
+    int cpu_bound_turnaround_time = 0, io_bound_turnaround_time = 0;
+
     while (!processes.empty() || !ready_queue.empty() || current_process != nullptr || !io_bound_map_keys.empty()) {
         bool did_something = false;
 
@@ -51,6 +56,12 @@ void srt::simulate() {
                 current_process = nullptr;
                 time_cpu_frees = elapsed_time + context_time / 2; // Time when CPU will be free after context switch
                 context_switch_time_remaining = context_time / 2;
+
+                if (new_process.is_cpu_bound) {
+                    cpu_bound_preemptions++;
+                } else {
+                    io_bound_preemptions++;
+                }
             }
             did_something = true;
         }
@@ -72,6 +83,12 @@ void srt::simulate() {
                 current_process = nullptr;
                 time_cpu_frees = elapsed_time + context_time / 2;
                 context_switch_time_remaining = context_time / 2;
+
+                if (io_completed.is_cpu_bound) {
+                    cpu_bound_preemptions++;
+                } else {
+                    io_bound_preemptions++;
+                }
             }
             did_something = true;
         }
@@ -86,6 +103,13 @@ void srt::simulate() {
 
             time_cpu_frees = elapsed_time + current_process->remaining_time;
             print_event(elapsed_time, "Process " + current_process->id + " (tau " + std::to_string(int(current_process->tau)) + "ms) started using the CPU for " + std::to_string(current_process->remaining_time) + "ms burst", ready_queue);
+
+            if (current_process->is_cpu_bound) {
+                cpu_bound_context_switches++;
+            } else {
+                io_bound_context_switches++;
+            }
+            total_cpu_time += current_process->remaining_time;  // Track total CPU time
             did_something = true;
         }
 
@@ -100,7 +124,8 @@ void srt::simulate() {
                     delete current_process;
                     current_process = nullptr;
                 } else {
-                    double new_tau = calculate_new_tau(current_process->tau, current_process->bursts.front(), alpha, lambda);                    print_event(elapsed_time, "Recalculated tau for process " + current_process->id + ": old tau " + std::to_string(int(current_process->tau)) + "ms ==> new tau " + std::to_string(int(new_tau)) + "ms", ready_queue);
+                    double new_tau = calculate_new_tau(current_process->tau, current_process->bursts.front(), alpha, lambda);
+                    print_event(elapsed_time, "Recalculated tau for process " + current_process->id + ": old tau " + std::to_string(int(current_process->tau)) + "ms ==> new tau " + std::to_string(int(new_tau)) + "ms", ready_queue);
                     current_process->tau = new_tau;
                     current_process->remaining_time = new_tau;
                     io_bound_map[elapsed_time + new_tau + context_time / 2] = *current_process;
@@ -123,4 +148,43 @@ void srt::simulate() {
     }
 
     print_event(elapsed_time, "Simulator ended for SRT", ready_queue);
+
+    // Update statistics after simulation
+    if (elapsed_time > 0) {
+        cpu_util = (double)total_cpu_time / elapsed_time;
+    }
+    if (cpu_bound_context_switches > 0) {
+        cpu_turn = (double)cpu_bound_turnaround_time / cpu_bound_context_switches;
+        cpu_wait = (double)cpu_bound_wait_time / cpu_bound_context_switches;
+    }
+    if (io_bound_context_switches > 0) {
+        io_turn = (double)io_bound_turnaround_time / io_bound_context_switches;
+        io_wait = (double)io_bound_wait_time / io_bound_context_switches;
+    }
+    num_cpu_switches = cpu_bound_context_switches;
+    num_io_switches = io_bound_context_switches;
+    cpu_preempt = cpu_bound_preemptions;
+    io_preempt = io_bound_preemptions;
+}
+
+// Implementing the write_statistics function for SRT
+void srt::write_statistics(const std::string& filename) const {
+    std::fstream outfile(filename, std::ios::app);
+
+    outfile << "Algorithm SRT" << std::endl;
+    outfile << "-- CPU utilization: " << std::fixed << std::setprecision(3) << (cpu_util * 100) << "%" << std::endl;
+    outfile << "-- CPU-bound average wait time: " << std::fixed << std::setprecision(3) << (cpu_bound_context_switches > 0 ? cpu_wait : 0) << " ms" << std::endl;
+    outfile << "-- I/O-bound average wait time: " << std::fixed << std::setprecision(3) << (io_bound_context_switches > 0 ? io_wait : 0) << " ms" << std::endl;
+    outfile << "-- Overall average wait time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_wait + io_wait) / 2) : 0) << " ms" << std::endl;
+    outfile << "-- CPU-bound average turnaround time: " << std::fixed << std::setprecision(3) << (cpu_bound_context_switches > 0 ? cpu_turn : 0) << " ms" << std::endl;
+    outfile << "-- I/O-bound average turnaround time: " << std::fixed << std::setprecision(3) << (io_bound_context_switches > 0 ? io_turn : 0) << " ms" << std::endl;
+    outfile << "-- Overall average turnaround time: " << std::fixed << std::setprecision(3) << ((cpu_bound_context_switches > 0 && io_bound_context_switches > 0) ? ((cpu_turn + io_turn) / 2) : 0) << " ms" << std::endl;
+    outfile << "-- CPU-bound number of context switches: " << num_cpu_switches << std::endl;
+    outfile << "-- I/O-bound number of context switches: " << num_io_switches << std::endl;
+    outfile << "-- Overall number of context switches: " << num_cpu_switches + num_io_switches << std::endl;
+    outfile << "-- CPU-bound number of preemptions: " << cpu_preempt << std::endl;
+    outfile << "-- I/O-bound number of preemptions: " << io_preempt << std::endl;
+    outfile << "-- Overall number of preemptions: " << cpu_preempt + io_preempt << std::endl << std::endl;
+
+    outfile.close();
 }
