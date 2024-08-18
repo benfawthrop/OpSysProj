@@ -7,6 +7,7 @@
 #include <string>
 #include "rng.h"
 #include "process.h"
+#include <cmath>
 
 class rr {
 public:
@@ -32,6 +33,9 @@ private:
     // helper function to make our outputting to cout easier
     void print_line(const std::string& message) {
         std::cout << "time " << elapsed_time << "ms: " << message << " " << get_queue_status() << std::endl;
+    }
+    static bool compare_by_arrival_time(const Process& a, const Process& b) {
+        return a.arrival_time < b.arrival_time;
     }
 };
 

@@ -9,6 +9,7 @@
 
 
 void fcfs::sim_and_print() {
+    std::sort(processes.begin(), processes.end(), compare_by_arrival_time);
     print_line("Simulator started for FCFS");
 
     std::map<int, Process> io_bound_map;

@@ -28,6 +28,7 @@ std::string rr::get_queue_status() {
 }
 
 void rr::simulate() {
+    std::sort(processes.begin(), processes.end(), compare_by_arrival_time);
     print_line("Simulator started for RR");
 
     std::map<int, Process> io_bound_map;
