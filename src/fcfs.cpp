@@ -6,6 +6,8 @@
 #include <string>
 #include <map>
 #include <cmath>
+#include <algorithm>
+
 
 
 void fcfs::sim_and_print() {

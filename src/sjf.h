@@ -4,6 +4,8 @@
 #include "process.h"
 #include <vector>
 #include <string>
+#include <algorithm>
+
 
 class sjf {
 public:

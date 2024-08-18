@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <queue>
 #include <fstream>
+#include <algorithm>
 
 
 // Helper function to print events and queue status

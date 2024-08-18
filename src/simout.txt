@@ -67,6 +67,6 @@ Algorithm RR
 -- CPU-bound number of preemptions: 481
 -- I/O-bound  number of preemptions: 85
 -- overall number of preemptions: 566
--- CPU-bound percentage of CPU bursts completed within one time slice: 5.556%
+-- CPU-bound percentage of CPU bursts completed within one time slice: 5.660%
 -- I/O-bound percentage of CPU bursts completed within one time slice: 10.345%
--- overall percentage of CPU bursts completed within one time slice: 7.229%
+-- overall percentage of CPU bursts completed within one time slice: 7.317%
