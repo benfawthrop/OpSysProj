@@ -6,6 +6,7 @@
 #include <string>
 #include <map>
 #include <cmath>
+#include <algorithm>
 
 
 void fcfs::sim_and_print() {
@@ -136,6 +137,8 @@ void fcfs::sim_and_print() {
     cpu_util = (double)total_cpu_time / elapsed_time;
     cpu_turn = (double)cpu_bound_turnaround_time / cpu_bound_context_switches;
     io_turn = (double)io_bound_turnaround_time / io_bound_context_switches;
+    tot_turn = ((double) cpu_bound_turnaround_time + io_bound_turnaround_time) / ((double) cpu_bound_context_switches + io_bound_context_switches);
+
 
     cpu_wait = (double)cpu_bound_wait_time / cpu_bound_context_switches;
     io_wait = (double)io_bound_wait_time / io_bound_context_switches;

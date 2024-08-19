@@ -8,6 +8,8 @@
 #include "rng.h"
 #include "process.h"
 #include <cmath>
+#include <algorithm>
+
 
 class rr {
 public:

@@ -67,6 +67,18 @@ build CMakeFiles/MAIN.dir/rr.cpp.o: CXX_COMPILER__MAIN_unscanned_Debug /Users/be
   OBJECT_DIR = CMakeFiles/MAIN.dir
   OBJECT_FILE_DIR = CMakeFiles/MAIN.dir
 
+build CMakeFiles/MAIN.dir/srt.cpp.o: CXX_COMPILER__MAIN_unscanned_Debug /Users/benjamin/Desktop/OpSysProj/src/srt.cpp || cmake_object_order_depends_target_MAIN
+  DEP_FILE = CMakeFiles/MAIN.dir/srt.cpp.o.d
+  FLAGS = -g -std=gnu++11 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk -fcolor-diagnostics -Wall -Werror -g
+  OBJECT_DIR = CMakeFiles/MAIN.dir
+  OBJECT_FILE_DIR = CMakeFiles/MAIN.dir
+
+build CMakeFiles/MAIN.dir/sjf.cpp.o: CXX_COMPILER__MAIN_unscanned_Debug /Users/benjamin/Desktop/OpSysProj/src/sjf.cpp || cmake_object_order_depends_target_MAIN
+  DEP_FILE = CMakeFiles/MAIN.dir/sjf.cpp.o.d
+  FLAGS = -g -std=gnu++11 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk -fcolor-diagnostics -Wall -Werror -g
+  OBJECT_DIR = CMakeFiles/MAIN.dir
+  OBJECT_FILE_DIR = CMakeFiles/MAIN.dir
+
 
 # =============================================================================
 # Link build statements for EXECUTABLE target MAIN
@@ -75,7 +87,7 @@ build CMakeFiles/MAIN.dir/rr.cpp.o: CXX_COMPILER__MAIN_unscanned_Debug /Users/be
 #############################################
 # Link the executable MAIN
 
-build MAIN: CXX_EXECUTABLE_LINKER__MAIN_Debug CMakeFiles/MAIN.dir/main.cpp.o CMakeFiles/MAIN.dir/fcfs.cpp.o CMakeFiles/MAIN.dir/rr.cpp.o
+build MAIN: CXX_EXECUTABLE_LINKER__MAIN_Debug CMakeFiles/MAIN.dir/main.cpp.o CMakeFiles/MAIN.dir/fcfs.cpp.o CMakeFiles/MAIN.dir/rr.cpp.o CMakeFiles/MAIN.dir/srt.cpp.o CMakeFiles/MAIN.dir/sjf.cpp.o
   FLAGS = -g -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX14.0.sdk
   OBJECT_DIR = CMakeFiles/MAIN.dir
   POST_BUILD = :

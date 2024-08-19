@@ -8,7 +8,7 @@
 #include <fstream>
 #include <map>
 #include <cmath>
-
+#include <algorithm>
 
 
 std::string rr::get_queue_status() {
@@ -53,9 +53,9 @@ void rr::simulate() {
     // while there are processes alive
     while (processes_killed < (int) processes.size()) {
         bool did_something = false;
+        int curr_arrival = processes[i].arrival_time;
 
         if (i < (int) processes.size()) {
-            int curr_arrival = processes[i].arrival_time;
             if (curr_arrival >= elapsed_time && (time_cpu_frees == -1 || curr_arrival <= time_cpu_frees) &&
                 (io_bound_map_keys.empty() || curr_arrival <= io_bound_map_keys.top())) {
 
@@ -158,6 +158,9 @@ void rr::simulate() {
                     }
 
                     if (using_cpu.bursts.empty()) {
+                        if (using_cpu.id == "B1") {
+                            printf("");
+                        }
                         print_line("Process " + using_cpu.id + " terminated");
                         processes_killed++;
                     } else {
@@ -277,7 +280,7 @@ void rr::write_statistics(const std::string& filename) {
     outfile << "-- I/O-bound number of context switches: " << num_io_switches << std::endl;
     outfile << "-- overall number of context switches: " << num_cpu_switches + num_io_switches << std::endl;
     outfile << "-- CPU-bound number of preemptions: " << cpu_preempt << std::endl;
-    outfile << "-- I/O-bound  number of preemptions: " << io_preempt << std::endl;
+    outfile << "-- I/O-bound number of preemptions: " << io_preempt << std::endl;
     outfile << "-- overall number of preemptions: " << cpu_preempt + io_preempt << std::endl;
     outfile << "-- CPU-bound percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << cpu_bursts_in_slice * 100 << "%\n";
     outfile << "-- I/O-bound percentage of CPU bursts completed within one time slice: " << std::setprecision(3) << io_bursts_in_slice * 100 << "%\n";

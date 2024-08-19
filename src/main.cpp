@@ -305,13 +305,12 @@ void part2_print(std::vector<Process> processes, int t_cs, double alpha, int t_s
 
     srt SRT = srt(processes, t_cs, alpha, lambda);
     SRT.simulate();
-    SRT.simulate();
+//    SRT.simulate();
     SRT.write_statistics("simout.txt");
     std::cout << std::endl;
 
     rr RR(processes, t_cs, t_slice);
     RR.write_statistics("simout.txt");
-
 
 
 }
