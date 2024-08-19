@@ -39,8 +39,8 @@ void fcfs::sim_and_print() {
                 (io_bound_map_keys.empty() || curr_arrival <= io_bound_map_keys.top())) {
 
                 q.push(processes[i]);
-                times_entered_q.push(elapsed_time);
                 elapsed_time = processes[i].arrival_time;
+                times_entered_q.push(elapsed_time);
                 if (elapsed_time <= 9999) {
                     print_line("Process " + processes[i].id + " arrived; added to ready queue");
                 }
@@ -51,10 +51,10 @@ void fcfs::sim_and_print() {
 
         if (cpu_free && !q.empty()) {
             cpu_free = false;
+            int wait_time = elapsed_time - times_entered_q.front();
             elapsed_time += context_switch_time / 2;
             using_cpu = q.front();
             q.pop();
-            int wait_time = elapsed_time - times_entered_q.front() - (context_switch_time / 2);
             times_entered_q.pop();
 
             if (using_cpu.is_cpu_bound) {
@@ -138,7 +138,8 @@ void fcfs::sim_and_print() {
     io_turn = (double)io_bound_turnaround_time / io_bound_context_switches;
 
     cpu_wait = (double)cpu_bound_wait_time / cpu_bound_context_switches;
-    io_wait = (double)io_bound_wait_time / (io_bound_context_switches / 2);
+    io_wait = (double)io_bound_wait_time / io_bound_context_switches;
+    tot_wait = ((double) cpu_bound_wait_time + io_bound_wait_time) / ((double) cpu_bound_context_switches + io_bound_context_switches);
     num_cpu_switches = cpu_bound_context_switches;
     num_io_switches = io_bound_context_switches;
 }
@@ -167,10 +168,10 @@ void fcfs::write_statistics(const std::string& filename) const {
     outfile << "-- CPU utilization: " << std::fixed << std::setprecision(3) << (std::ceil(cpu_util * 100000) / 1000) << "%" << std::endl;
     outfile << "-- CPU-bound average wait time: " << std::fixed << std::setprecision(3) << cpu_wait << " ms" << std::endl;
     outfile << "-- I/O-bound average wait time: " << std::fixed << std::setprecision(3) << io_wait << " ms" << std::endl;
-    outfile << "-- overall average wait time: " << std::fixed << std::setprecision(3) << ((cpu_wait + io_wait) / 2) << " ms" << std::endl;
+    outfile << "-- overall average wait time: " << std::fixed << std::setprecision(3) << tot_wait << " ms" << std::endl;
     outfile << "-- CPU-bound average turnaround time: " << std::fixed << std::setprecision(3) << cpu_turn << " ms" << std::endl;
     outfile << "-- I/O-bound average turnaround time: " << std::fixed << std::setprecision(3) << io_turn << " ms" << std::endl;
-    outfile << "-- overall average turnaround time: " << std::fixed << std::setprecision(3) << ((cpu_turn + io_turn) / 2) << " ms" << std::endl;
+    outfile << "-- overall average turnaround time: " << std::fixed << std::setprecision(3) << tot_turn << " ms" << std::endl;
     outfile << "-- CPU-bound number of context switches: " << num_cpu_switches << std::endl;
     outfile << "-- I/O-bound number of context switches: " << num_io_switches << std::endl;
     outfile << "-- overall number of context switches: " << num_cpu_switches + num_io_switches << std::endl;

@@ -26,7 +26,7 @@ private:
     std::vector<Process> processes;
     std::queue<Process> q; /* this would be a p queue for other algos */
     int t_cs, elapsed_time, t_slc;
-    double cpu_util, cpu_wait, io_wait, cpu_turn, io_turn, cpu_bursts_in_slice, io_bursts_in_slice, total_in_slice;
+    double cpu_util, cpu_wait, io_wait, tot_wait, cpu_turn, io_turn, tot_turn, cpu_bursts_in_slice, io_bursts_in_slice, total_in_slice;
     int num_cpu_switches, num_io_switches, cpu_preempt, io_preempt;
     // helper function to get the end-of-line queue status updates
     std::string get_queue_status();
