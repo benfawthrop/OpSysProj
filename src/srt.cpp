@@ -149,8 +149,28 @@ void srt::simulate() {
         }
 
         // Prevent infinite loop by incrementing time when nothing is done
+        // Efficient time advancement
         if (!did_something) {
-            elapsed_time++;
+            int next_event_time = INT_MAX;
+
+            if (!processes.empty()) {
+                next_event_time = std::min(next_event_time, processes.front().arrival_time);
+            }
+            if (!io_bound_map_keys.empty()) {
+                next_event_time = std::min(next_event_time, io_bound_map_keys.top());
+            }
+            if (context_switch_time_remaining > 0) {
+                next_event_time = std::min(next_event_time, elapsed_time + context_switch_time_remaining);
+            }
+            if (current_process != nullptr && current_process->bursts.front() > 0) {
+                next_event_time = std::min(next_event_time, time_cpu_frees);
+            }
+
+            if (next_event_time != INT_MAX) {
+                elapsed_time = next_event_time;
+            } else {
+                elapsed_time++;
+            }
         }
     }
 

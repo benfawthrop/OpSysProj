@@ -39,7 +39,7 @@ Algorithm SJF
 -- overall number of preemptions: 0
 
 Algorithm SRT
--- CPU utilization: 119.663%
+-- CPU utilization: 115.686%
 -- CPU-bound average wait time: 0.000 ms
 -- I/O-bound average wait time: 0.000 ms
 -- overall average wait time: 0.000 ms
@@ -47,9 +47,27 @@ Algorithm SRT
 -- I/O-bound average turnaround time: 0.000 ms
 -- overall average turnaround time: 0.000 ms
 -- CPU-bound number of context switches: 6
--- I/O-bound number of context switches: 40
--- overall number of context switches: 46
+-- I/O-bound number of context switches: 39
+-- overall number of context switches: 45
 -- CPU-bound number of preemptions: 4
--- I/O-bound number of preemptions: 7
--- overall number of preemptions: 11
+-- I/O-bound number of preemptions: 6
+-- overall number of preemptions: 10
 
+Algorithm RR
+-- CPU utilization: 30.303%
+-- CPU-bound average wait time: nan ms
+-- I/O-bound average wait time: 50.340 ms
+-- overall average wait time: 50.340 ms
+-- CPU-bound average turnaround time: nan ms
+-- I/O-bound average turnaround time: 66.632 ms
+-- overall average turnaround time: 66.632 ms
+-- CPU-bound number of context switches: 0
+-- I/O-bound number of context switches: 794
+-- overall number of context switches: 794
+-- CPU-bound number of preemptions: 0
+-- I/O-bound number of preemptions: 703
+-- overall number of preemptions: 703
+-- CPU-bound percentage of CPU bursts completed within one time slice: nan%
+-- I/O-bound percentage of CPU bursts completed within one time slice: 7.692%
+-- overall percentage of CPU bursts completed within one time slice: 7.692%
+w
