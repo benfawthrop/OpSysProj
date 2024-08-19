@@ -49,9 +49,10 @@ void rr::simulate() {
     int cpu_bound_turnaround_time = 0, io_bound_turnaround_time = 0;
     int cpu_bursts_count = 0, io_bursts_count = 0;
     int cpu_one_slice = 0, io_one_slice = 0;
+    int number_added = 0;
 
     // while there are processes alive
-    while (processes_killed < (int) processes.size()) {
+    while (processes_killed < (int) processes.size() && (number_added == 0 || processes_killed < number_added)) {
         bool did_something = false;
         int curr_arrival = processes[i].arrival_time;
 
@@ -67,6 +68,7 @@ void rr::simulate() {
                 }
                 i++;
                 cpu_burst_active[processes[i].id] = 0;
+                number_added++;
                 did_something = true;
             }
         }
