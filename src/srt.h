@@ -1,53 +1,71 @@
-//
-// Created by Benjamin Fawthrop on 8/10/24.
-//
-
 #ifndef OPSYSPROJ_SRT_H
 #define OPSYSPROJ_SRT_H
+
 #include <vector>
 #include <string>
 #include <iostream>
 #include "process.h"
 #include <queue>
-
+#include <algorithm>
+#include <map>
+#include <cmath>
 
 class srt {
 public:
-    //constructor
-    srt(const std::vector<Process>& processes, int context_switch_time, double alpha)
-            : processes(processes), context_switch_time(context_switch_time), elapsed_time(0), cpu_util(0.0),
-              cpu_wait(0.0), io_wait(0.0), cpu_turn(0.0), io_turn(0.0), alpha(alpha), num_cpu_switches(0), num_io_switches(0),
-              cpu_preempt(0), io_preempt(0) {
-        sim_and_print();
+    srt(const std::vector<Process>& processes, int context_time, double alpha, double lambda)
+            : processes(processes), context_time(context_time), elapsed_time(0), alpha(alpha), lambda(lambda),
+              cpu_util(0), cpu_wait(0), io_wait(0), cpu_turn(0), io_turn(0),
+              num_cpu_switches(0), num_io_switches(0), cpu_preempt(0), io_preempt(0),
+              cpu_bound_context_switches(0), io_bound_context_switches(0),
+              cpu_bound_preemptions(0), io_bound_preemptions(0) {
+        for (size_t i = 0; i < this->processes.size(); ++i) {
+            this->processes[i].tau = std::ceil(1 / lambda);  // Initial tau value based on lambda
+        }
     }
 
-    // getters
-    void sim_and_print();
-    void write_statistics(const std::string& filename);
+    void simulate();
+
+    void write_statistics(const std::string& filename) const;
+
 private:
-    struct CompareTau {
+    struct CompareRemainingTime {
         bool operator()(const Process &a, const Process &b) const {
-            if (a.tau == b.tau) {
-                return a.id > b.id;  // Reverse logic for max-heap behavior
+            if (a.remaining_time == b.remaining_time) {
+                return a.id > b.id;  // Tie-breaking by process ID
             }
-            return a.tau > b.tau;
+            return a.remaining_time > b.remaining_time;
         }
     };
 
     std::vector<Process> processes;
-    std::priority_queue<Process, std::vector<Process>, CompareTau> q; /* this would be a p queue for other algos */
-    int context_switch_time, elapsed_time;
-    double cpu_util, cpu_wait, io_wait, cpu_turn, io_turn, alpha;
-    int num_cpu_switches, num_io_switches, cpu_preempt, io_preempt;
-    // helper function to get the end-of-line queue status updates
-    std::string get_queue_status();
-    // helper function to make our outputting to cout easier
-    void print_line(const std::string& message) {
-        std::cout << "time " << elapsed_time << "ms: " << message << " " << get_queue_status() << std::endl;
-    }
+    std::priority_queue<Process, std::vector<Process>, CompareRemainingTime> ready_queue;
+    int context_time, elapsed_time;
+    double alpha, lambda;
+
+    // Statistics variables
+    double cpu_util;
+    double cpu_wait;
+    double io_wait;
+    double cpu_turn;
+    double io_turn;
+    int num_cpu_switches;
+    int num_io_switches;
+    int cpu_preempt;
+    int io_preempt;
+
+    // Context switch and preemption tracking
+    int cpu_bound_context_switches;
+    int io_bound_context_switches;
+    int cpu_bound_preemptions;
+    int io_bound_preemptions;
+    static bool compare_by_arrival_time(const Process& a, const Process& b);
+
+    std::map<int, Process> io_bound_map;
+    std::priority_queue<int, std::vector<int>, std::greater<int> > io_bound_map_keys;
+
+    void print_event(int time, const std::string &event, const std::priority_queue<Process, std::vector<Process>, CompareRemainingTime> &ready_queue);
+    double calculate_new_tau(double old_tau, int actual_burst, double alpha, double lambda);
+    bool processHasId(const Process &p, const std::string &id);
 };
-
-
-
 
 #endif //OPSYSPROJ_SRT_H

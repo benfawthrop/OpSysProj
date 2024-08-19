@@ -14,9 +14,17 @@ public:
     int arrival_time;
     std::vector<int> bursts; // burst times
     bool is_cpu_bound;
-    double tau; ///added this for sjf
+    double tau; // added this for sjf and srt
+    int remaining_time;  // Remaining time for the current CPU burst
 
-//    Process& operator=(const Process &other);
+    Process() : id(""), arrival_time(0), tau(0), remaining_time(0) {}
+
+    Process(const std::string& id, const std::vector<int>& bursts, int arrival_time, int tau)
+            : id(id), arrival_time(arrival_time), bursts(bursts), tau(tau), remaining_time(0) {}
+
+    bool operator==(const Process &other) const {
+        return this->id == other.id;
+    }
 };
 
 //Process& Process::operator=(const Process &other) {
